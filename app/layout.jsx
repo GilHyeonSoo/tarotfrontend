@@ -12,11 +12,13 @@ export const metadata = {
         type: 'website',
         locale: 'ko_KR',
         siteName: '루미나 타로',
+        images: [{ url: '/OGImage.png', width: 1200, height: 630 }],
     },
     twitter: {
         card: 'summary_large_image',
         title: '루미나 타로 - Lumina Tarot',
         description: 'AI 기반 타로 카드 해석 서비스',
+        images: ['/OGImage.png'],
     },
     icons: {
         icon: [
