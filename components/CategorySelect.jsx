@@ -11,27 +11,29 @@ const categories = [
 
 const CategorySelect = ({ onSelect }) => {
     return (
-        <div className="category-screen">
-            <div className="category-header">
+        <section className="category-screen" aria-label="운세 분야 선택">
+            <header className="category-header">
                 <h2 className="category-title">어떤 운세를 보시겠어요?</h2>
                 <p className="category-subtitle">궁금한 분야를 선택해주세요</p>
-            </div>
+            </header>
 
-            <div className="category-grid">
+            <nav className="category-grid" aria-label="운세 분야">
                 {categories.map((category) => (
                     <button
                         key={category.id}
                         className="category-card"
                         onClick={() => onSelect(category)}
+                        aria-label={`${category.name} - ${category.description}`}
                     >
-                        <span className="category-icon">{category.icon}</span>
+                        <span className="category-icon" aria-hidden="true">{category.icon}</span>
                         <span className="category-name">{category.name}</span>
                         <span className="category-desc">{category.description}</span>
                     </button>
                 ))}
-            </div>
-        </div>
+            </nav>
+        </section>
     );
 };
 
 export default CategorySelect;
+

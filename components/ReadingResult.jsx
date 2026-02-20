@@ -160,13 +160,13 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
     };
 
     return (
-        <div className="result-screen">
-            <div className="result-header">
+        <section className="result-screen" aria-label="타로 카드 해석 결과">
+            <header className="result-header">
                 <h2 className="result-title">당신의 운명</h2>
                 <p className="result-subtitle">
                     <span style={{ color: 'var(--color-accent-rose)', fontWeight: 'bold' }}>{currentIndex + 1}번째 카드</span> / 10장
                 </p>
-            </div>
+            </header>
 
             <div className={`single-card-container ${isTransitioning ? 'transitioning' : ''}`}>
                 <div
@@ -193,7 +193,7 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
 
             <div className="interpretation-panel">
                 {isFlipped ? (
-                    <div className="card-interpretation">
+                    <article className="card-interpretation">
                         <div className="interpretation-header">
                             <span className="position-number">{toRoman(currentIndex)}</span>
                             <div className="position-info">
@@ -244,7 +244,7 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </article>
                 ) : (
                     <div className="interpretation-placeholder">
                         <p>카드를 클릭하여 운명을 확인하세요</p>
@@ -252,8 +252,8 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                 )}
             </div>
 
-            {!isFlipped && <div className="result-footer"></div>}
-        </div>
+            {!isFlipped && <footer className="result-footer"></footer>}
+        </section>
     );
 };
 

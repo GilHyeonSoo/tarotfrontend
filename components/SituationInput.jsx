@@ -13,8 +13,8 @@ const SituationInput = ({ category, onSubmit }) => {
     };
 
     return (
-        <div className="situation-screen">
-            <div className="situation-header">
+        <section className="situation-screen" aria-label="상황 입력">
+            <header className="situation-header">
                 <span className="selected-category">
                     {category.icon} {category.name}
                 </span>
@@ -22,10 +22,12 @@ const SituationInput = ({ category, onSubmit }) => {
                 <p className="situation-subtitle">
                     더 정확한 해석을 위해 고민이나 상황을 적어주세요
                 </p>
-            </div>
+            </header>
 
             <div className="situation-input-container">
+                <label htmlFor="situation-input" className="sr-only">현재 상황 입력</label>
                 <textarea
+                    id="situation-input"
                     className="situation-textarea"
                     placeholder="당신의 현재 상황을 이곳에 입력해주세요."
                     value={situation}
@@ -52,7 +54,7 @@ const SituationInput = ({ category, onSubmit }) => {
                     건너뛰기
                 </button>
             </div>
-        </div>
+        </section>
     );
 };
 

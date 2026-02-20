@@ -107,8 +107,8 @@ const SelectCards = ({ cards, onComplete }) => {
     const nextCardMeaning = cardMeanings[selectedCards.length] || null;
 
     return (
-        <div className="select-screen">
-            <div className="select-header">
+        <section className="select-screen" aria-label="카드 선택">
+            <header className="select-header">
                 <h2 className="select-title">카드를 선택하세요</h2>
                 <p className="select-subtitle">
                     직관에 따라 <span className="highlight">{maxCards}장</span>의 카드를 선택하세요
@@ -118,7 +118,7 @@ const SelectCards = ({ cards, onComplete }) => {
                     <span className="counter-divider">/</span>
                     <span className="counter-max">{maxCards}</span>
                 </div>
-            </div>
+            </header>
 
             {/* 다음 카드 의미 표시 */}
             {nextCardMeaning && (
@@ -228,18 +228,19 @@ const SelectCards = ({ cards, onComplete }) => {
                 </>
             )}
 
-            <div className="select-footer">
+            <footer className="select-footer">
                 <button
                     className={`mystical-button ${selectedCards.length === maxCards ? 'ready' : 'disabled'}`}
                     onClick={handleConfirm}
                     disabled={selectedCards.length !== maxCards}
+                    aria-label={selectedCards.length === maxCards ? '운명 확인하기' : `${maxCards - selectedCards.length}장 더 선택하세요`}
                 >
                     {selectedCards.length === maxCards
                         ? '운명 확인하기'
                         : `${maxCards - selectedCards.length}장 더 선택하세요`}
                 </button>
-            </div>
-        </div>
+            </footer>
+        </section>
     );
 };
 

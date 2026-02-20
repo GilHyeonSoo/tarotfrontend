@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+/* Google Fonts loaded via next/font/google in layout.jsx */
 
 :root {
   /* Colors */
@@ -516,4 +516,17 @@ body {
 
 .glow-pulse {
   animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* Screen Reader Only - 시각적으로 숨기되 스크린 리더는 읽을 수 있음 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

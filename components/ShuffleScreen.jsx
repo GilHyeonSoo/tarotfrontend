@@ -24,7 +24,7 @@ const ShuffleScreen = ({ onComplete }) => {
     const cards = Array.from({ length: 7 }, (_, i) => i);
 
     return (
-        <div className="shuffle-screen">
+        <section className="shuffle-screen" aria-label="카드 셔플">
             <div className="shuffle-content">
                 <h2 className="shuffle-title">
                     {isShuffling ? '카드를 섞는 중...' : '준비 완료!'}
@@ -49,7 +49,7 @@ const ShuffleScreen = ({ onComplete }) => {
                 </div>
 
                 <div className="shuffle-progress">
-                    <div className="progress-bar">
+                    <div className="progress-bar" role="progressbar" aria-valuenow={shuffleCount} aria-valuemin={0} aria-valuemax={totalShuffles} aria-label="카드 셔플 진행률">
                         <div
                             className="progress-fill"
                             style={{ width: `${(shuffleCount / totalShuffles) * 100}%` }}
@@ -66,7 +66,7 @@ const ShuffleScreen = ({ onComplete }) => {
                         : '이제 당신의 카드를 선택하세요'}
                 </p>
             </div>
-        </div>
+        </section>
     );
 };
 
