@@ -1,0 +1,453 @@
+.select-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.select-header {
+    text-align: center;
+    padding: 15px 0 20px;
+    flex-shrink: 0;
+}
+
+.select-title {
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    color: var(--color-accent-gold);
+    margin-bottom: 8px;
+    text-shadow: var(--shadow-glow);
+}
+
+.select-subtitle {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 15px;
+}
+
+.select-subtitle .highlight {
+    color: var(--color-accent-rose);
+    font-weight: 600;
+}
+
+.selection-counter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gradient-card);
+    padding: 10px 25px;
+    border-radius: 30px;
+    border: 1px solid var(--color-accent-gold);
+}
+
+.counter-current {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    color: var(--color-accent-gold);
+}
+
+.counter-divider {
+    color: var(--color-text-secondary);
+    font-size: 1.3rem;
+}
+
+.counter-max {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    color: var(--color-text-secondary);
+}
+
+/* 카드 의미 표시 */
+.card-meaning {
+    text-align: center;
+    padding: 15px 30px;
+    margin: 0 auto 10px;
+    width: fit-content;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(45, 27, 78, 0.3) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 15px;
+    animation: meaningFade 0.4s ease;
+    position: relative;
+    z-index: 50;
+}
+
+@keyframes meaningFade {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.meaning-number {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    color: var(--color-accent-gold);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.meaning-text {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.cards-horizontal-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    gap: 40px;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.cards-horizontal {
+    position: relative;
+    height: 200px;
+    display: flex;
+    align-items: center;
+}
+
+.cards-row {
+    flex-shrink: 0;
+}
+
+/* 카드 래퍼 */
+.card-wrapper {
+    position: absolute;
+    z-index: var(--base-z);
+}
+
+.card-wrapper:hover {
+    z-index: 200 !important;
+}
+
+/* 개별 카드 */
+.fan-card {
+    width: 125px;
+    height: 190px;
+    cursor: pointer;
+    transform: translateX(var(--offset-x)) translateY(0);
+    z-index: var(--z-index);
+    will-change: transform;
+    transition: transform 0.2s ease-out;
+}
+
+/* 호버 효과 */
+.fan-card.hovered {
+    transform: translateX(var(--offset-x)) translateY(-40px) scale(1.08);
+    z-index: 100 !important;
+}
+
+.fan-card.selected {
+    transform: translateX(var(--offset-x)) translateY(-30px);
+}
+
+.fan-card.selected.hovered {
+    transform: translateX(var(--offset-x)) translateY(-50px) scale(1.08);
+}
+
+/* Card Inner */
+.fan-card-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+
+
+
+
+/* Card Back Design */
+.fan-card-back {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-back-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.fan-card.selected .card-back-image {
+    border-color: var(--color-accent-rose);
+    box-shadow: 0 0 15px rgba(183, 110, 121, 0.5);
+}
+
+/* Selected Badge */
+.selected-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    background: var(--color-accent-rose);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    color: white;
+    box-shadow: 0 2px 10px rgba(183, 110, 121, 0.6);
+    z-index: 10;
+}
+
+/* Selected Preview */
+.selected-preview {
+    padding: 15px 20px;
+    background: rgba(26, 26, 58, 0.6);
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    flex-shrink: 0;
+}
+
+.preview-label {
+    text-align: center;
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    color: var(--color-accent-gold);
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.preview-cards {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.preview-card {
+    width: 36px;
+    height: 52px;
+    background: var(--gradient-card);
+    border: 1px solid var(--color-accent-rose);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    color: var(--color-accent-rose);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.preview-card:hover {
+    background: rgba(183, 110, 121, 0.25);
+    transform: scale(1.1);
+}
+
+/* Footer */
+.select-footer {
+    padding: 15px 0;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.mystical-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--color-bg-secondary);
+    box-shadow: none;
+}
+
+.mystical-button.disabled::before {
+    display: none;
+}
+
+.mystical-button.ready {
+    animation: readyPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes readyPulse {
+
+    0%,
+    100% {
+        box-shadow: var(--shadow-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 40px rgba(212, 175, 55, 0.6);
+    }
+}
+
+/* Responsive - Tablet */
+@media (max-width: 900px) {
+    .select-header {
+        padding: 10px 0 15px;
+    }
+
+    .select-title {
+        font-size: 1.8rem;
+    }
+
+    .card-meaning {
+        padding: 12px 20px;
+    }
+
+    .meaning-text {
+        white-space: normal;
+        font-size: 1rem;
+    }
+}
+
+/* Responsive - Mobile: Grid Layout */
+@media (max-width: 600px) {
+    .select-screen {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .select-header {
+        padding: 8px 0;
+    }
+
+    .select-title {
+        font-size: 1.3rem;
+        margin-bottom: 5px;
+    }
+
+    .select-subtitle {
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+    }
+
+    .selection-counter {
+        padding: 6px 15px;
+    }
+
+    .counter-current {
+        font-size: 1.2rem;
+    }
+
+    .counter-divider,
+    .counter-max {
+        font-size: 0.9rem;
+    }
+
+    .card-meaning {
+        padding: 8px 12px;
+        margin-bottom: 6px;
+    }
+
+    .meaning-number {
+        font-size: 0.75rem;
+        margin-bottom: 4px;
+    }
+
+    .meaning-text {
+        font-size: 0.85rem;
+        white-space: normal;
+        line-height: 1.3;
+    }
+
+    /* 모바일: 그리드 레이아웃으로 변경 */
+    .cards-horizontal-container {
+        padding: 10px 5px;
+        overflow: visible;
+        align-items: flex-start;
+        max-height: none;
+    }
+
+    .cards-horizontal {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        height: auto;
+        width: 100%;
+    }
+
+    /* 카드 래퍼: static으로 변경 */
+    .card-wrapper {
+        position: static !important;
+        z-index: auto;
+    }
+
+    /* 개별 카드: 그리드용 스타일 (한 줄에 8장) */
+    .fan-card {
+        width: 38px;
+        height: 57px;
+        transform: none !important;
+        position: static;
+    }
+
+    .fan-card-inner {
+        border-radius: 4px;
+    }
+
+    .card-back-image {
+        border-radius: 4px;
+    }
+
+    .fan-card.hovered {
+        transform: scale(1.15) !important;
+        z-index: 10;
+    }
+
+    .fan-card.selected {
+        transform: scale(1.1) !important;
+        box-shadow: 0 0 8px var(--color-accent-rose);
+    }
+
+    .fan-card.selected.hovered {
+        transform: scale(1.2) !important;
+    }
+
+    .selected-badge {
+        width: 14px;
+        height: 14px;
+        font-size: 0.5rem;
+        top: 2px;
+        right: 2px;
+    }
+
+    .selected-preview {
+        padding: 8px 10px;
+    }
+
+    .preview-label {
+        font-size: 0.7rem;
+        margin-bottom: 6px;
+    }
+
+    .preview-cards {
+        gap: 4px;
+    }
+
+    .preview-card {
+        width: 24px;
+        height: 36px;
+        font-size: 0.6rem;
+        border-radius: 3px;
+    }
+
+    .select-footer {
+        padding: 8px 0;
+    }
+}

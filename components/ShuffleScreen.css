@@ -1,0 +1,132 @@
+.shuffle-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.shuffle-content {
+    text-align: center;
+}
+
+.shuffle-title {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    color: var(--color-accent-gold);
+    margin-bottom: 60px;
+    text-shadow: var(--shadow-glow);
+}
+
+.shuffle-deck {
+    position: relative;
+    width: 200px;
+    height: 280px;
+    margin: 0 auto 50px;
+    perspective: 1000px;
+}
+
+.shuffle-card {
+    position: absolute;
+    width: 140px;
+    height: 220px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) translateX(calc(var(--index) * 3px)) translateY(calc(var(--index) * -3px));
+    transition: transform 0.3s ease;
+}
+
+.shuffle-card.shuffling {
+    animation: cardShuffle 0.7s ease-in-out infinite;
+    animation-delay: var(--delay);
+}
+
+@keyframes cardShuffle {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) translateX(calc(var(--index) * 3px)) translateY(calc(var(--index) * -3px)) rotateZ(0deg);
+    }
+
+    25% {
+        transform: translate(-50%, -50%) translateX(calc(-60px + var(--index) * 5px)) translateY(calc(-30px + var(--index) * -3px)) rotateZ(-8deg);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) translateX(calc(60px + var(--index) * -5px)) translateY(calc(30px + var(--index) * -3px)) rotateZ(8deg);
+    }
+
+    75% {
+        transform: translate(-50%, -50%) translateX(calc(-30px + var(--index) * 3px)) translateY(calc(-15px + var(--index) * -3px)) rotateZ(-4deg);
+    }
+}
+
+.shuffle-card-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.shuffle-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.shuffle-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.progress-bar {
+    width: 200px;
+    height: 6px;
+    background: var(--color-bg-secondary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--gradient-gold);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    color: var(--color-accent-gold);
+    min-width: 60px;
+}
+
+.shuffle-hint {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .shuffle-title {
+        font-size: 1.8rem;
+    }
+
+    .shuffle-deck {
+        width: 150px;
+        height: 220px;
+    }
+
+    .shuffle-card {
+        width: 100px;
+        height: 160px;
+    }
+}
