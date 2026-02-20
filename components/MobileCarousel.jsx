@@ -131,6 +131,13 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
                 animationRef.current = null;
+
+                // 모멘텀 중단 시, 현재 시각적 위치를 currentIndex에 반영
+                const shift = Math.round(dragOffsetRef.current / CARD_SPACING);
+                if (shift !== 0) {
+                    currentIndexRef.current = wrapIndex(currentIndexRef.current - shift);
+                    setCurrentIndex(currentIndexRef.current);
+                }
             }
             setIsAnimating(false);
             isDraggingRef.current = true;
@@ -192,6 +199,13 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         if (animationRef.current) {
             cancelAnimationFrame(animationRef.current);
             animationRef.current = null;
+
+            // 모멘텀 중단 시, 현재 시각적 위치를 currentIndex에 반영
+            const shift = Math.round(dragOffsetRef.current / CARD_SPACING);
+            if (shift !== 0) {
+                currentIndexRef.current = wrapIndex(currentIndexRef.current - shift);
+                setCurrentIndex(currentIndexRef.current);
+            }
         }
         setIsAnimating(false);
         isDraggingRef.current = true;
