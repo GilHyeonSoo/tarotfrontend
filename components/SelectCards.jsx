@@ -123,7 +123,20 @@ const SelectCards = ({ cards, onComplete }) => {
             {/* 다음 카드 의미 표시 */}
             {nextCardMeaning && (
                 <div className="card-meaning">
-                    <p className="meaning-text">{nextCardMeaning}</p>
+                    <p className="meaning-text">
+                        {(() => {
+                            const match = nextCardMeaning.match(/^(.+카드는?\s*)/);
+                            if (match) {
+                                return (
+                                    <>
+                                        <span style={{ color: 'var(--color-accent-rose)', fontWeight: 'bold' }}>{match[1]}</span>
+                                        {nextCardMeaning.slice(match[1].length)}
+                                    </>
+                                );
+                            }
+                            return nextCardMeaning;
+                        })()}
+                    </p>
                 </div>
             )}
 

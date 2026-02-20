@@ -164,7 +164,7 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
             <div className="result-header">
                 <h2 className="result-title">당신의 운명</h2>
                 <p className="result-subtitle">
-                    {currentIndex + 1}번째 카드 / 10장
+                    <span style={{ color: 'var(--color-accent-rose)', fontWeight: 'bold' }}>{currentIndex + 1}번째 카드</span> / 10장
                 </p>
             </div>
 

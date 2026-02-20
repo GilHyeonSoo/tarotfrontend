@@ -1,132 +1,244 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './MobileCarousel.css';
 
 const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [offsetX, setOffsetX] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
 
+    const carouselRef = useRef(null);
     const startX = useRef(0);
     const lastX = useRef(0);
     const velocity = useRef(0);
     const lastTime = useRef(0);
     const animationRef = useRef(null);
+    const isDraggingRef = useRef(false);
+    const currentIndexRef = useRef(0);
+    const dragOffsetRef = useRef(0); // 픽셀 단위 누적 드래그
 
     const totalCards = cards.length;
+    const CARD_SPACING = 85;
+    // 충분히 많은 카드를 렌더해서 드래그 중 빈 공간 방지
+    const VISIBLE_RANGE = 20;
 
-    // 모멘텀 애니메이션
-    const animateMomentum = (initialVelocity) => {
-        let vel = initialVelocity * 0.2; // 속도 더 줄임
-        let pos = 0;
-        const friction = 0.90; // 마찰력 더 증가
-        const minVelocity = 0.02;
-        let accumulatedCards = 0;
+    const wrapIndex = (idx) => {
+        let i = idx % totalCards;
+        if (i < 0) i += totalCards;
+        return i;
+    };
 
+    // 카드 스타일 계산
+    const getCardStyle = (fractionalOffset) => {
+        const baseX = fractionalOffset * CARD_SPACING;
+        const dist = Math.abs(fractionalOffset);
+        const scale = Math.max(0.55, 1 - dist * 0.15);
+        const opacity = Math.max(0.08, 1 - dist * 0.25);
+        const translateY = dist * dist * 3;
+        const rotateZ = fractionalOffset * 2.5;
+
+        return {
+            transform: `translate3d(${baseX}px, ${translateY}px, 0) scale(${scale}) rotate(${rotateZ}deg)`,
+            opacity,
+            zIndex: 10 - Math.round(dist)
+        };
+    };
+
+    // DOM 직접 업데이트 (React 리렌더 없음)
+    const updateDOM = useCallback((pixelOffset) => {
+        const container = carouselRef.current;
+        if (!container) return;
+
+        const fraction = pixelOffset / CARD_SPACING;
+        const cardElements = container.querySelectorAll('.carousel-card');
+
+        cardElements.forEach((el) => {
+            const slot = parseInt(el.dataset.slot);
+            const effectivePos = slot + fraction;
+            const style = getCardStyle(effectivePos);
+
+            el.style.transform = style.transform;
+            el.style.opacity = style.opacity;
+            el.style.zIndex = style.zIndex;
+            el.style.transition = 'none';
+        });
+    }, []);
+
+    // 스냅 애니메이션 (드래그 끝난 후)
+    const snapToNearest = useCallback((fromPixel) => {
+        const fromFraction = fromPixel / CARD_SPACING;
+        const targetCards = Math.round(fromFraction);
+        const targetPixel = targetCards * CARD_SPACING;
+
+        const startTime = performance.now();
+        const duration = 280;
         setIsAnimating(true);
 
-        const animate = () => {
-            vel *= friction;
-            pos += vel * 10; // 프레임당 이동량 줄임
+        const animate = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+            const current = fromPixel + (targetPixel - fromPixel) * eased;
 
-            // 카드 단위로 인덱스 변경
-            const cardsPassed = Math.floor(Math.abs(pos) / 90) * Math.sign(pos);
+            updateDOM(current);
 
-            if (cardsPassed !== accumulatedCards) {
-                const diff = cardsPassed - accumulatedCards;
-                accumulatedCards = cardsPassed;
-
-                setCurrentIndex(prev => {
-                    let newIndex = prev - diff;
-                    while (newIndex < 0) newIndex += totalCards;
-                    while (newIndex >= totalCards) newIndex -= totalCards;
-                    return newIndex;
-                });
-            }
-
-            if (Math.abs(vel) > minVelocity) {
-                setOffsetX((pos % 90) * 0.5);
+            if (progress < 1) {
                 animationRef.current = requestAnimationFrame(animate);
             } else {
-                // 애니메이션 종료
-                setOffsetX(0);
+                // 최종: 인덱스 반영
+                const shift = Math.round(targetPixel / CARD_SPACING);
+                currentIndexRef.current = wrapIndex(currentIndexRef.current - shift);
+                setCurrentIndex(currentIndexRef.current);
+                dragOffsetRef.current = 0;
                 setIsAnimating(false);
             }
         };
 
         animationRef.current = requestAnimationFrame(animate);
-    };
+    }, [updateDOM, totalCards]);
 
-    // 터치 시작
-    const handleStart = (clientX) => {
+    // 모멘텀 애니메이션
+    const animateMomentum = useCallback((initialVelocity) => {
+        let vel = initialVelocity; // px/ms
+        let pos = dragOffsetRef.current; // 현재 픽셀 오프셋에서 시작
+        const friction = 0.97;
+        const minVelocity = 0.05;
+
+        setIsAnimating(true);
+
+        const animate = () => {
+            vel *= friction;
+            pos += vel * 16; // ~60fps
+
+            updateDOM(pos);
+
+            if (Math.abs(vel) > minVelocity) {
+                animationRef.current = requestAnimationFrame(animate);
+            } else {
+                // 모멘텀 끝 → 가장 가까운 카드로 스냅
+                dragOffsetRef.current = pos;
+                snapToNearest(pos);
+            }
+        };
+
+        animationRef.current = requestAnimationFrame(animate);
+    }, [updateDOM, snapToNearest]);
+
+    // 터치 이벤트 (native)
+    useEffect(() => {
+        const el = carouselRef.current;
+        if (!el) return;
+
+        const handleTouchStart = (e) => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+                animationRef.current = null;
+            }
+            setIsAnimating(false);
+            isDraggingRef.current = true;
+
+            const touch = e.touches[0];
+            startX.current = touch.clientX;
+            lastX.current = touch.clientX;
+            lastTime.current = performance.now();
+            velocity.current = 0;
+            dragOffsetRef.current = 0;
+        };
+
+        const handleTouchMove = (e) => {
+            if (!isDraggingRef.current) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            const clientX = touch.clientX;
+            const now = performance.now();
+            const dt = now - lastTime.current;
+
+            if (dt > 0) {
+                const instantVel = (clientX - lastX.current) / dt;
+                velocity.current = velocity.current * 0.3 + instantVel * 0.7;
+            }
+
+            lastX.current = clientX;
+            lastTime.current = now;
+
+            // 순수 픽셀 오프셋 - setState 절대 안 함
+            dragOffsetRef.current = clientX - startX.current;
+            updateDOM(dragOffsetRef.current);
+        };
+
+        const handleTouchEnd = () => {
+            if (!isDraggingRef.current) return;
+            isDraggingRef.current = false;
+
+            if (Math.abs(velocity.current) > 0.15) {
+                animateMomentum(velocity.current);
+            } else {
+                snapToNearest(dragOffsetRef.current);
+            }
+        };
+
+        el.addEventListener('touchstart', handleTouchStart, { passive: true });
+        el.addEventListener('touchmove', handleTouchMove, { passive: false });
+        el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+        return () => {
+            el.removeEventListener('touchstart', handleTouchStart);
+            el.removeEventListener('touchmove', handleTouchMove);
+            el.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [updateDOM, animateMomentum, snapToNearest]);
+
+    // 마우스 이벤트 (데스크톱)
+    const handleMouseDown = (e) => {
         if (animationRef.current) {
             cancelAnimationFrame(animationRef.current);
             animationRef.current = null;
         }
         setIsAnimating(false);
-        setIsDragging(true);
-        startX.current = clientX;
-        lastX.current = clientX;
-        lastTime.current = Date.now();
+        isDraggingRef.current = true;
+        startX.current = e.clientX;
+        lastX.current = e.clientX;
+        lastTime.current = performance.now();
         velocity.current = 0;
+        dragOffsetRef.current = 0;
     };
 
-    // 터치 이동
-    const handleMove = (clientX) => {
-        if (!isDragging) return;
-
-        const now = Date.now();
+    const handleMouseMove = (e) => {
+        if (!isDraggingRef.current) return;
+        const clientX = e.clientX;
+        const now = performance.now();
         const dt = now - lastTime.current;
 
         if (dt > 0) {
-            velocity.current = (clientX - lastX.current) / dt;
+            const instantVel = (clientX - lastX.current) / dt;
+            velocity.current = velocity.current * 0.3 + instantVel * 0.7;
         }
 
         lastX.current = clientX;
         lastTime.current = now;
 
-        const diff = clientX - startX.current;
-        setOffsetX(diff);
-
-        // 드래그 중 카드 인덱스 업데이트
-        const cardsPassed = Math.round(diff / 90);
-        if (cardsPassed !== 0) {
-            let newIndex = currentIndex - cardsPassed;
-            while (newIndex < 0) newIndex += totalCards;
-            while (newIndex >= totalCards) newIndex -= totalCards;
-            setCurrentIndex(newIndex);
-            startX.current = clientX;
-            setOffsetX(0);
-        }
+        dragOffsetRef.current = clientX - startX.current;
+        updateDOM(dragOffsetRef.current);
     };
 
-    // 터치 종료
-    const handleEnd = () => {
-        if (!isDragging) return;
-        setIsDragging(false);
+    const handleMouseUp = () => {
+        if (!isDraggingRef.current) return;
+        isDraggingRef.current = false;
 
-        // 속도가 충분하면 모멘텀 애니메이션
-        if (Math.abs(velocity.current) > 0.3) {
+        if (Math.abs(velocity.current) > 0.15) {
             animateMomentum(velocity.current);
         } else {
-            setOffsetX(0);
+            snapToNearest(dragOffsetRef.current);
         }
     };
 
-    // 터치 이벤트
-    const handleTouchStart = (e) => handleStart(e.touches[0].clientX);
-    const handleTouchMove = (e) => handleMove(e.touches[0].clientX);
-    const handleTouchEnd = () => handleEnd();
-
-    // 마우스 이벤트
-    const handleMouseDown = (e) => handleStart(e.clientX);
-    const handleMouseMove = (e) => {
-        if (isDragging) handleMove(e.clientX);
-    };
-    const handleMouseUp = () => handleEnd();
     const handleMouseLeave = () => {
-        if (isDragging) handleEnd();
+        if (isDraggingRef.current) handleMouseUp();
     };
+
+    // 동기화
+    useEffect(() => {
+        currentIndexRef.current = currentIndex;
+    }, [currentIndex]);
 
     // 카드 선택
     const centerCard = cards[currentIndex];
@@ -148,17 +260,14 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
     const isCenterSelected = selectedCards.find(c => c.id === centerCard?.id);
     const selectedCardIndex = selectedCards.findIndex(c => c.id === centerCard?.id);
 
-    // 표시할 카드 계산 (-2 ~ +2)
+    // 넉넉하게 카드 렌더 (-10 ~ +10 = 21장)
     const getVisibleCards = () => {
         const visible = [];
-        for (let i = -2; i <= 2; i++) {
-            let cardIndex = currentIndex + i;
-            if (cardIndex < 0) cardIndex += totalCards;
-            if (cardIndex >= totalCards) cardIndex -= totalCards;
-
+        for (let i = -VISIBLE_RANGE; i <= VISIBLE_RANGE; i++) {
+            const cardIndex = wrapIndex(currentIndex + i);
             const card = cards[cardIndex];
             if (card) {
-                visible.push({ card, position: i });
+                visible.push({ card, slot: i });
             }
         }
         return visible;
@@ -166,55 +275,41 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
 
     const visibleCards = getVisibleCards();
 
-    // 클린업
     useEffect(() => {
         return () => {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-            }
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
     }, []);
 
     return (
         <div className="mobile-carousel-container">
             <div
+                ref={carouselRef}
                 className="carousel-wheel"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
-                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                style={{ cursor: isDraggingRef.current ? 'grabbing' : 'grab' }}
             >
                 <div className="carousel-cards">
-                    {visibleCards.map(({ card, position }) => {
+                    {visibleCards.map(({ card, slot }) => {
                         const isSelected = selectedCards.find(c => c.id === card.id);
                         const cardSelectedIdx = selectedCards.findIndex(c => c.id === card.id);
-
-                        // 드래그/애니메이션 중 오프셋 적용
-                        const dragOffset = (isDragging || isAnimating) ? offsetX * 0.5 : 0;
-                        const translateX = position * 90 + dragOffset;
-                        const scale = position === 0 ? 1 : 0.7;
-                        const opacity = position === 0 ? 1 : 0.4;
-                        const zIndex = 10 - Math.abs(position);
-
-                        // 항상 부드러운 트랜지션 사용
-                        const transitionSpeed = isDragging ? '0.15s' : '0.6s';
+                        const style = getCardStyle(slot);
 
                         return (
                             <div
-                                key={card.id}
-                                className={`carousel-card ${isSelected ? 'selected' : ''} ${position === 0 ? 'center' : ''}`}
+                                key={`${currentIndex}-${slot}`}
+                                data-slot={slot}
+                                className={`carousel-card ${isSelected ? 'selected' : ''} ${slot === 0 ? 'center' : ''}`}
                                 style={{
-                                    transform: `translateX(${translateX}px) scale(${scale})`,
-                                    opacity: opacity,
-                                    zIndex: zIndex,
-                                    transition: `transform ${transitionSpeed} cubic-bezier(0.25, 0.1, 0.25, 1), opacity ${transitionSpeed} ease, scale ${transitionSpeed} ease`
+                                    ...style,
+                                    transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
+                                    willChange: 'transform, opacity'
                                 }}
                             >
-                                <img src="/cards/back.png" alt="카드" />
+                                <img src="/cards/back.png" alt="카드" draggable="false" />
                                 {isSelected && (
                                     <div className="carousel-badge">{cardSelectedIdx + 1}</div>
                                 )}
