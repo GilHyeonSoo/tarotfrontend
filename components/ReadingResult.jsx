@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
+import SummaryCardViewer from './SummaryCardViewer';
 import './ReadingResult.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -49,7 +50,12 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
     const [streamingText, setStreamingText] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
     const [streamComplete, setStreamComplete] = useState(false);
+    const [showSummary, setShowSummary] = useState(false);
+    const [summaryText, setSummaryText] = useState('');
+    const [isSummaryStreaming, setIsSummaryStreaming] = useState(false);
+    const [summaryComplete, setSummaryComplete] = useState(false);
     const interpretationRef = useRef(null);
+    const summaryRef = useRef(null);
 
     const currentCard = selectedCards?.[currentIndex];
     const isLastCard = currentIndex === (selectedCards?.length || 0) - 1;
@@ -127,6 +133,73 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
         }
     }, [streamingText]);
 
+    useEffect(() => {
+        if (summaryRef.current && summaryText) {
+            summaryRef.current.scrollTop = summaryRef.current.scrollHeight;
+        }
+    }, [summaryText]);
+
+    // 최종 결과 요약 요청
+    const fetchFinalSummary = async () => {
+        setShowSummary(true);
+        setIsSummaryStreaming(true);
+        setSummaryText('');
+        setSummaryComplete(false);
+
+        try {
+            const response = await fetch(`${API_URL}/api/interpret-card`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    card: {
+                        id: selectedCards[0].id,
+                        isReversed: selectedCards[0].isReversed || false
+                    },
+                    cardIndex: 10,
+                    category: category || {},
+                    situation: situation || '',
+                    allCards: selectedCards.map(c => ({
+                        id: c.id,
+                        isReversed: c.isReversed || false
+                    }))
+                })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.content) {
+                                setSummaryText(prev => prev + data.content);
+                            }
+                            if (data.done) {
+                                setSummaryComplete(true);
+                            }
+                            if (data.error) {
+                                setSummaryText(prev => prev + `\n\n⚠️ 오류: ${data.error}`);
+                            }
+                        } catch (e) { }
+                    }
+                }
+            }
+        } catch (err) {
+            setSummaryText(`⚠️ 서버 연결에 실패했습니다: ${err.message}`);
+        } finally {
+            setIsSummaryStreaming(false);
+            setSummaryComplete(true);
+        }
+    };
+
     // 카드가 없으면 렌더링하지 않음 (화면 전환 중 방지)
     if (!selectedCards || selectedCards.length === 0 || !currentCard) {
         return null;
@@ -158,6 +231,57 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
             }, 300);
         }
     };
+
+    // 최종 요약 화면
+    if (showSummary) {
+        return (
+            <section className="result-screen summary-mode" aria-label="최종 결과 요약">
+                <header className="result-header">
+                    <h2 className="result-title">종합 운세 요약</h2>
+                    <p className="result-subtitle">
+                        10장의 카드가 전하는 메시지
+                    </p>
+                </header>
+
+                <SummaryCardViewer selectedCards={selectedCards} />
+
+                <div className="interpretation-panel">
+                    <article className="card-interpretation">
+                        <div className="interpretation-body">
+                            <div
+                                className={`streaming-content ${isSummaryStreaming ? 'streaming' : ''}`}
+                                ref={summaryRef}
+                            >
+                                {isSummaryStreaming && !summaryText && (
+                                    <div className="streaming-loading">
+                                        <span className="typing-indicator">
+                                            <span></span><span></span><span></span>
+                                        </span>
+                                        전문가가 종합 해석 중...
+                                    </div>
+                                )}
+                                <div
+                                    className="markdown-content"
+                                    dangerouslySetInnerHTML={{ __html: parseMarkdown(summaryText) }}
+                                />
+                            </div>
+                        </div>
+
+                        {summaryComplete && (
+                            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                                <div className="complete-section">
+                                    <p className="complete-message">모든 해석이 완료되었습니다</p>
+                                    <button className="mystical-button" onClick={onRestart}>
+                                        다시 시작하기
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </article>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="result-screen" aria-label="타로 카드 해석 결과">
@@ -236,12 +360,9 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                                 </button>
                             )}
                             {isLastCard && streamComplete && (
-                                <div className="complete-section">
-                                    <p className="complete-message">모든 카드가 공개되었습니다</p>
-                                    <button className="mystical-button" onClick={onRestart}>
-                                        다시 시작하기
-                                    </button>
-                                </div>
+                                <button className="mystical-button glow-pulse" onClick={fetchFinalSummary}>
+                                    종합 운세 보기
+                                </button>
                             )}
                         </div>
                     </article>
@@ -251,6 +372,15 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                     </div>
                 )}
             </div>
+
+            {!isStreaming && (
+                <div style={{ textAlign: 'center', marginTop: '15px' }}>
+                    <button className="skip-to-summary-btn" onClick={fetchFinalSummary}>
+                        최종 운세 보기<br />
+                        <span className="skip-label">Skip</span>
+                    </button>
+                </div>
+            )}
 
             {!isFlipped && <footer className="result-footer"></footer>}
         </section>

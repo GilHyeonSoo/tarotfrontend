@@ -100,6 +100,17 @@ const SelectCards = ({ cards, onComplete }) => {
         }
     };
 
+    // 한번에 모두 뽑기 (랜덤 10장)
+    const handleSelectAll = () => {
+        if (selectedCards.length > 0) return;
+        const shuffled = [...cards].sort(() => Math.random() - 0.5);
+        const picked = shuffled.slice(0, maxCards).map(card => ({
+            ...card,
+            isReversed: Math.random() < 0.5
+        }));
+        setSelectedCards(picked);
+    };
+
     // 전체 카드 너비 계산
     const totalWidth = (shuffledCards.length - 1) * visibleWidth + cardWidth;
 
@@ -229,6 +240,14 @@ const SelectCards = ({ cards, onComplete }) => {
             )}
 
             <footer className="select-footer">
+                {isMobile && selectedCards.length === 0 && (
+                    <button
+                        className="select-all-btn"
+                        onClick={handleSelectAll}
+                    >
+                        한번에 모두 뽑기
+                    </button>
+                )}
                 <button
                     className={`mystical-button ${selectedCards.length === maxCards ? 'ready' : 'disabled'}`}
                     onClick={handleConfirm}
