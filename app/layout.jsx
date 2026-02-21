@@ -1,4 +1,5 @@
 import { Cinzel, Cormorant_Garamond } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import './App.css';
 
@@ -89,6 +90,18 @@ export default function RootLayout({ children }) {
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
                 />
+                <Script
+                    src="https://www.googletagmanager.com/gtag/js?id=G-2JKBZSH2ES"
+                    strategy="afterInteractive"
+                />
+                <Script id="google-analytics" strategy="afterInteractive">
+                    {`
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag(){dataLayer.push(arguments);}
+                        gtag('js', new Date());
+                        gtag('config', 'G-2JKBZSH2ES');
+                    `}
+                </Script>
             </head>
             <body>
                 {children}
