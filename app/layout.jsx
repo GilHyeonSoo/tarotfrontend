@@ -60,6 +60,11 @@ export const metadata = {
         description: 'AI 기반 무료 타로 카드 해석 서비스. 78장의 타로 카드로 운명의 메시지를 확인하세요.',
         images: ['/OGImage.png'],
     },
+    appleWebApp: {
+        title: '루미나 타로',
+        statusBarStyle: 'black-translucent',
+        capable: true,
+    },
     icons: {
         icon: [
             { url: '/favicon/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
