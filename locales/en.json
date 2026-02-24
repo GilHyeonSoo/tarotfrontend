@@ -1,0 +1,122 @@
+{
+    "start": {
+        "subtitle": "The cards of destiny await you",
+        "introText1": "Among 78 mystical cards,",
+        "introText2": "choose 10 to reveal your destiny",
+        "startButton": "Begin"
+    },
+    "category": {
+        "title": "What would you like to know?",
+        "subtitle": "Choose a topic that interests you",
+        "love": "Love",
+        "loveDesc": "Romance and relationships",
+        "job": "Career",
+        "jobDesc": "Career and job prospects",
+        "business": "Business",
+        "businessDesc": "Business and investments",
+        "money": "Finance",
+        "moneyDesc": "Wealth and finances",
+        "study": "Education",
+        "studyDesc": "Studies and exams"
+    },
+    "situation": {
+        "title": "Tell us about your situation",
+        "subtitle": "Share your concerns for a more accurate reading",
+        "placeholder": "Describe your current situation here.",
+        "submit": "Draw Cards",
+        "skip": "Skip"
+    },
+    "shuffle": {
+        "shuffling": "Shuffling the cards...",
+        "ready": "Ready!",
+        "hint": "The cards of fate are being shuffled...",
+        "complete": "Now choose your cards"
+    },
+    "select": {
+        "title": "Select Your Cards",
+        "subtitle": "Follow your intuition and choose {count} cards",
+        "selectAll": "Draw All at Once",
+        "confirm": "Reveal Your Destiny",
+        "moreCards": "Select {count} more",
+        "cardMeanings": [
+            "The first card represents your current situation.",
+            "The second card reveals obstacles blocking your path.",
+            "The third card uncovers your subconscious desires and hidden truths.",
+            "The fourth card reflects your recent past.",
+            "The fifth card shows emerging influences and future potential.",
+            "The sixth card reveals what the near future holds.",
+            "The seventh card reflects how you see yourself and your emotions.",
+            "The eighth card represents the thoughts and influence of those around you.",
+            "The ninth card reveals your hopes and fears.",
+            "The tenth card shows the final outcome.",
+            "Discover what destiny has in store for you."
+        ]
+    },
+    "carousel": {
+        "selectCard": "Select This Card",
+        "cancelCard": "Cancel Card #{n}",
+        "hint": "← Swipe to browse cards →"
+    },
+    "reading": {
+        "title": "Your Destiny",
+        "cardCount": "Card {current}",
+        "totalCards": "of 10",
+        "cardBack": "Card back",
+        "flipHint": "Click to flip",
+        "reversed": "Reversed",
+        "loading": "The reader is interpreting...",
+        "nextCard": "Next Card",
+        "viewSummary": "View Full Reading",
+        "placeholder": "Click the card to reveal your fate",
+        "skipToSummary": "View Full Reading",
+        "positions": [
+            {
+                "title": "Present",
+                "description": "Your current situation and circumstances."
+            },
+            {
+                "title": "Obstacle",
+                "description": "Challenges and obstacles blocking your path."
+            },
+            {
+                "title": "Subconscious",
+                "description": "Hidden desires, subconscious thoughts, and the root of the matter."
+            },
+            {
+                "title": "Past",
+                "description": "Recent events that have shaped the present."
+            },
+            {
+                "title": "Potential",
+                "description": "Emerging influences and possibilities ahead."
+            },
+            {
+                "title": "Near Future",
+                "description": "What the near future holds for you."
+            },
+            {
+                "title": "Self-Perception",
+                "description": "How you perceive yourself and your inner emotions."
+            },
+            {
+                "title": "Environment",
+                "description": "The thoughts and influences of people around you."
+            },
+            {
+                "title": "Hopes & Fears",
+                "description": "Your deepest hopes and hidden fears."
+            },
+            {
+                "title": "Outcome",
+                "description": "The final result and conclusion."
+            }
+        ]
+    },
+    "summary": {
+        "title": "Complete Reading",
+        "subtitle": "The message from your 10 cards",
+        "loading": "Preparing your complete reading...",
+        "restart": "Start Over",
+        "viewerHint": "← Swipe to view your cards →"
+    }
+}

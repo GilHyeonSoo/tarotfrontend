@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './MobileCarousel.css';
 
 const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
+    const { t } = useLanguage();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
 
@@ -355,10 +357,10 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
                 onClick={handleSelectCard}
                 disabled={(selectedCards.length >= maxCards && !isCenterSelected) || isAnimating}
             >
-                {isCenterSelected ? `${selectedCardIndex + 1}번 카드 취소` : '이 카드 선택'}
+                {isCenterSelected ? t('carousel.cancelCard', { n: selectedCardIndex + 1 }) : t('carousel.selectCard')}
             </button>
 
-            <p className="carousel-hint">← 스와이프하여 카드 탐색 →</p>
+            <p className="carousel-hint">{t('carousel.hint')}</p>
         </div>
     );
 };

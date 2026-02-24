@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './SummaryCardViewer.css';
 
 const SummaryCardViewer = ({ selectedCards }) => {
+    const { t, language } = useLanguage();
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const carouselRef = useRef(null);
@@ -341,7 +343,7 @@ const SummaryCardViewer = ({ selectedCards }) => {
                             >
                                 <img
                                     src={card.image || "/cards/back.png"}
-                                    alt={card.name_kr}
+                                    alt={card[`name_${language}`] || card.name || card.name_kr}
                                     className={card.isReversed ? 'reversed' : ''}
                                     draggable="false"
                                 />
@@ -354,9 +356,9 @@ const SummaryCardViewer = ({ selectedCards }) => {
             {centerCard && (
                 <div className="viewer-card-info">
                     <span className="viewer-card-number">{currentIndex + 1}.</span>
-                    <span className="viewer-card-name">{centerCard.name_kr}</span>
+                    <span className="viewer-card-name">{centerCard[`name_${language}`] || centerCard.name || centerCard.name_kr}</span>
                     {centerCard.isReversed && (
-                        <span className="viewer-reversed-badge">역방향</span>
+                        <span className="viewer-reversed-badge">{t('reading.reversed')}</span>
                     )}
                 </div>
             )}
@@ -369,7 +371,7 @@ const SummaryCardViewer = ({ selectedCards }) => {
                 >
                     ‹
                 </button>
-                <p className="viewer-hint">← 스와이프하여 카드 확인 →</p>
+                <p className="viewer-hint">{t('summary.viewerHint')}</p>
                 <button
                     className="viewer-nav-btn"
                     onClick={() => goToCard(1)}

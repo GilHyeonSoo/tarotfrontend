@@ -1,21 +1,9 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './SelectCards.css';
 import MobileCarousel from './MobileCarousel';
 
-// 카드 위치별 의미
-const cardMeanings = [
-    "첫번째 카드는 당신의 현재 상황을 나타냅니다.",
-    "두번째 카드는 현재 상황을 가로막는 방해 요소, 장애물을 나타냅니다.",
-    "세번째 카드는 무의식, 잠재의식, 문제의 본질, 욕망 등을 나타냅니다.",
-    "네번째 카드는 가까운 과거의 상황을 나타냅니다.",
-    "다섯번째 카드는 현재 드러난 영향력, 앞으로 발전할 가능성을 나타냅니다.",
-    "여섯번째 카드는 가까운 미래의 상황입니다.",
-    "일곱번째 카드는 당신이 스스로 인식하는 자신의 감정, 자기 자신을 어떻게 생각하는지 나타냅니다.",
-    "여덟번째 카드는 당신이 바라보는 주변사람들의 생각이나 영향력, 상황 혹은 주변환경을 의미합니다.",
-    "아홉번째 카드는 당신의 마음가짐, 혹은 바라는 점, 두려워하는 것, 희망을 나타냅니다.",
-    "열번째 카드는 최종적인 결과, 결론입니다.",
-    "당신의 운명을 확인해보세요."
-];
+
 
 // 개별 카드 컴포넌트
 const FanCard = memo(({ card, isSelected, selectedIndex, offsetX, isHovered, onClick }) => {
@@ -30,7 +18,7 @@ const FanCard = memo(({ card, isSelected, selectedIndex, offsetX, isHovered, onC
         >
             <div className="fan-card-inner">
                 <div className="fan-card-back">
-                    <img src="/cards/back.png" alt="카드 뒷면" className="card-back-image" />
+                    <img src="/cards/back.png" alt="Card back" className="card-back-image" />
                 </div>
             </div>
             {isSelected && (
@@ -43,6 +31,7 @@ const FanCard = memo(({ card, isSelected, selectedIndex, offsetX, isHovered, onC
 });
 
 const SelectCards = ({ cards, onComplete }) => {
+    const { t } = useLanguage();
     const [selectedCards, setSelectedCards] = useState([]);
     const [shuffledCards, setShuffledCards] = useState([]);
     const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -114,15 +103,16 @@ const SelectCards = ({ cards, onComplete }) => {
     // 전체 카드 너비 계산
     const totalWidth = (shuffledCards.length - 1) * visibleWidth + cardWidth;
 
-    // 다음 카드 의미 가져오기 (11번째 항목은 10장 선택 후 표시)
-    const nextCardMeaning = cardMeanings[selectedCards.length] || null;
+    // 다음 카드 의미 가져오기
+    const cardMeanings = t('select.cardMeanings');
+    const nextCardMeaning = Array.isArray(cardMeanings) ? cardMeanings[selectedCards.length] : null;
 
     return (
-        <section className="select-screen" aria-label="카드 선택">
+        <section className="select-screen" aria-label="Card Selection">
             <header className="select-header">
-                <h2 className="select-title">카드를 선택하세요</h2>
+                <h2 className="select-title">{t('select.title')}</h2>
                 <p className="select-subtitle">
-                    직관에 따라 <span className="highlight">{maxCards}장</span>의 카드를 선택하세요
+                    {t('select.subtitle', { count: maxCards })}
                 </p>
                 <div className="selection-counter">
                     <span className="counter-current">{selectedCards.length}</span>
@@ -135,18 +125,7 @@ const SelectCards = ({ cards, onComplete }) => {
             {nextCardMeaning && (
                 <div className="card-meaning">
                     <p className="meaning-text">
-                        {(() => {
-                            const match = nextCardMeaning.match(/^(.+카드는?\s*)/);
-                            if (match) {
-                                return (
-                                    <>
-                                        <span style={{ color: 'var(--color-accent-rose)', fontWeight: 'bold' }}>{match[1]}</span>
-                                        {nextCardMeaning.slice(match[1].length)}
-                                    </>
-                                );
-                            }
-                            return nextCardMeaning;
-                        })()}
+                        {nextCardMeaning}
                     </p>
                 </div>
             )}
@@ -245,18 +224,18 @@ const SelectCards = ({ cards, onComplete }) => {
                         className="select-all-btn"
                         onClick={handleSelectAll}
                     >
-                        한번에 모두 뽑기
+                        {t('select.selectAll')}
                     </button>
                 )}
                 <button
                     className={`mystical-button ${selectedCards.length === maxCards ? 'ready' : 'disabled'}`}
                     onClick={handleConfirm}
                     disabled={selectedCards.length !== maxCards}
-                    aria-label={selectedCards.length === maxCards ? '운명 확인하기' : `${maxCards - selectedCards.length}장 더 선택하세요`}
+                    aria-label={selectedCards.length === maxCards ? t('select.confirm') : t('select.moreCards', { count: maxCards - selectedCards.length })}
                 >
                     {selectedCards.length === maxCards
-                        ? '운명 확인하기'
-                        : `${maxCards - selectedCards.length}장 더 선택하세요`}
+                        ? t('select.confirm')
+                        : t('select.moreCards', { count: maxCards - selectedCards.length })}
                 </button>
             </footer>
         </section>

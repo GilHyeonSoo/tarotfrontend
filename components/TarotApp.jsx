@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
+import LanguageSelector from '@/components/LanguageSelector';
 import Stars from '@/components/Stars';
 import StartScreen from '@/components/StartScreen';
 import CategorySelect from '@/components/CategorySelect';
@@ -21,7 +23,8 @@ const SCREENS = {
     RESULT: 'result'
 };
 
-export default function TarotApp() {
+function TarotAppContent() {
+    const { t, language } = useLanguage();
     const [currentScreen, setCurrentScreen] = useState(SCREENS.START);
     const [cards, setCards] = useState([]);
     const [selectedCards, setSelectedCards] = useState([]);
@@ -45,7 +48,7 @@ export default function TarotApp() {
             if (data.success) {
                 setCards(data.cards);
             } else {
-                setError('카드 데이터를 불러오는데 실패했습니다.');
+                setError('Failed to load card data.');
             }
         } catch (err) {
             // 서버가 실행되지 않은 경우 기본 카드 생성
@@ -170,8 +173,8 @@ export default function TarotApp() {
             <main className="app" role="main">
                 <Stars />
                 <div className="loading-screen" aria-live="polite">
-                    <div className="loading-spinner" aria-label="카드 준비 중"></div>
-                    <p>카드를 준비하는 중...</p>
+                    <div className="loading-spinner" aria-label="Loading"></div>
+                    <p>Loading...</p>
                 </div>
             </main>
         );
@@ -185,7 +188,7 @@ export default function TarotApp() {
                 <div className="error-screen" role="alert">
                     <p>{error}</p>
                     <button className="mystical-button" onClick={fetchCards}>
-                        다시 시도
+                        Retry
                     </button>
                 </div>
             </main>
@@ -195,6 +198,7 @@ export default function TarotApp() {
     return (
         <main className="app" role="main">
             <Stars />
+            <LanguageSelector />
             <div className={`screen-container ${fadeClass}`}>
                 {currentScreen === SCREENS.START && (
                     <StartScreen onStart={handleStart} />
@@ -220,9 +224,18 @@ export default function TarotApp() {
                         category={selectedCategory}
                         situation={userSituation}
                         onRestart={handleRestart}
+                        language={language}
                     />
                 )}
             </div>
         </main>
+    );
+}
+
+export default function TarotApp() {
+    return (
+        <LanguageProvider>
+            <TarotAppContent />
+        </LanguageProvider>
     );
 }

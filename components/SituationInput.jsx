@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './SituationInput.css';
 
 const SituationInput = ({ category, onSubmit }) => {
+    const { t } = useLanguage();
     const [situation, setSituation] = useState('');
 
     const handleSubmit = () => {
@@ -13,23 +15,23 @@ const SituationInput = ({ category, onSubmit }) => {
     };
 
     return (
-        <section className="situation-screen" aria-label="상황 입력">
+        <section className="situation-screen" aria-label="Situation Input">
             <header className="situation-header">
                 <span className="selected-category">
                     {category.icon} {category.name}
                 </span>
-                <h2 className="situation-title">현재 상황을 알려주세요</h2>
+                <h2 className="situation-title">{t('situation.title')}</h2>
                 <p className="situation-subtitle">
-                    더 정확한 해석을 위해 고민이나 상황을 적어주세요
+                    {t('situation.subtitle')}
                 </p>
             </header>
 
             <div className="situation-input-container">
-                <label htmlFor="situation-input" className="sr-only">현재 상황 입력</label>
+                <label htmlFor="situation-input" className="sr-only">{t('situation.title')}</label>
                 <textarea
                     id="situation-input"
                     className="situation-textarea"
-                    placeholder="당신의 현재 상황을 이곳에 입력해주세요."
+                    placeholder={t('situation.placeholder')}
                     value={situation}
                     onChange={(e) => setSituation(e.target.value)}
                     rows={5}
@@ -45,13 +47,13 @@ const SituationInput = ({ category, onSubmit }) => {
                     className="mystical-button"
                     onClick={handleSubmit}
                 >
-                    카드 뽑기
+                    {t('situation.submit')}
                 </button>
                 <button
                     className="skip-button"
                     onClick={handleSkip}
                 >
-                    건너뛰기
+                    {t('situation.skip')}
                 </button>
             </div>
         </section>

@@ -1,33 +1,36 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './CategorySelect.css';
 
-const categories = [
-    { id: 'love', name: '연애운', icon: '♥️', description: '사랑과 인연에 대한 운세' },
-    { id: 'job', name: '취업운', icon: '💼', description: '취업과 진로에 대한 운세' },
-    { id: 'business', name: '사업운', icon: '🏢', description: '사업과 투자에 대한 운세' },
-    { id: 'money', name: '금전운', icon: '💰', description: '재물과 금전에 대한 운세' },
-    { id: 'study', name: '학업운', icon: '📖', description: '학업과 시험에 대한 운세' }
-];
-
 const CategorySelect = ({ onSelect }) => {
+    const { t } = useLanguage();
+
+    const categories = [
+        { id: 'love', icon: '♥️' },
+        { id: 'job', icon: '💼' },
+        { id: 'business', icon: '🏢' },
+        { id: 'money', icon: '💰' },
+        { id: 'study', icon: '📖' }
+    ];
+
     return (
-        <section className="category-screen" aria-label="운세 분야 선택">
+        <section className="category-screen" aria-label="Category Select">
             <header className="category-header">
-                <h2 className="category-title">어떤 운세를 보시겠어요?</h2>
-                <p className="category-subtitle">궁금한 분야를 선택해주세요</p>
+                <h2 className="category-title">{t('category.title')}</h2>
+                <p className="category-subtitle">{t('category.subtitle')}</p>
             </header>
 
-            <nav className="category-grid" aria-label="운세 분야">
-                {categories.map((category) => (
+            <nav className="category-grid" aria-label="Fortune categories">
+                {categories.map((cat) => (
                     <button
-                        key={category.id}
+                        key={cat.id}
                         className="category-card"
-                        onClick={() => onSelect(category)}
-                        aria-label={`${category.name} - ${category.description}`}
+                        onClick={() => onSelect({ ...cat, name: t(`category.${cat.id}`), description: t(`category.${cat.id}Desc`) })}
+                        aria-label={`${t(`category.${cat.id}`)} - ${t(`category.${cat.id}Desc`)}`}
                     >
-                        <span className="category-icon" aria-hidden="true">{category.icon}</span>
-                        <span className="category-name">{category.name}</span>
-                        <span className="category-desc">{category.description}</span>
+                        <span className="category-icon" aria-hidden="true">{cat.icon}</span>
+                        <span className="category-name">{t(`category.${cat.id}`)}</span>
+                        <span className="category-desc">{t(`category.${cat.id}Desc`)}</span>
                     </button>
                 ))}
             </nav>
@@ -36,4 +39,3 @@ const CategorySelect = ({ onSelect }) => {
 };
 
 export default CategorySelect;
-

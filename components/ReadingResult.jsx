@@ -1,23 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
+import { useLanguage } from '../contexts/LanguageContext';
 import SummaryCardViewer from './SummaryCardViewer';
 import './ReadingResult.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-// 카드 위치별 의미 (켈트 십자가 스프레드)
-const positionMeanings = [
-    { title: "현재 상황", description: "질문하는 사람의 현재 상황을 나타냅니다." },
-    { title: "방해 요소", description: "현재 상황을 가로막는 방해 요소, 장애물을 나타냅니다." },
-    { title: "잠재의식", description: "무의식, 잠재의식, 문제의 본질, 욕망 등을 나타냅니다." },
-    { title: "과거", description: "가까운 과거의 상황을 나타냅니다." },
-    { title: "가능성", description: "현재 드러난 영향력, 앞으로 발전할 가능성을 나타냅니다." },
-    { title: "가까운 미래", description: "가까운 미래의 상황입니다." },
-    { title: "자기 인식", description: "질문자 스스로 인식하는 자신의 감정, 자기 자신을 어떻게 생각하는지 나타냅니다." },
-    { title: "주변 환경", description: "질문자를 바라보는 주변사람들의 생각이나 영향력, 상황 혹은 주변환경을 의미합니다." },
-    { title: "희망과 두려움", description: "질문자의 마음가짐, 혹은 바라는 점, 두려워하는 것, 희망을 나타냅니다." },
-    { title: "최종 결과", description: "최종적인 결과, 결론입니다." }
-];
+
 
 // 안전한 마크다운 파서 (XSS 방어)
 const parseMarkdown = (text) => {
@@ -43,7 +32,8 @@ const toRoman = (num) => {
     return romanNumerals[num] || (num + 1).toString();
 };
 
-const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
+const ReadingResult = ({ selectedCards, category, situation, onRestart, language }) => {
+    const { t, language: currentLang } = useLanguage();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -82,6 +72,7 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                     cardIndex: currentIndex,
                     category: category || {},
                     situation: situation || '',
+                    language: language || 'ko',
                     allCards: selectedCards.map(c => ({
                         id: c.id,
                         isReversed: c.isReversed || false
@@ -158,6 +149,7 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                     cardIndex: 10,
                     category: category || {},
                     situation: situation || '',
+                    language: language || 'ko',
                     allCards: selectedCards.map(c => ({
                         id: c.id,
                         isReversed: c.isReversed || false
@@ -235,11 +227,11 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
     // 최종 요약 화면
     if (showSummary) {
         return (
-            <section className="result-screen summary-mode" aria-label="최종 결과 요약">
+            <section className="result-screen summary-mode" aria-label="Final Reading">
                 <header className="result-header">
-                    <h2 className="result-title">종합 운세 요약</h2>
+                    <h2 className="result-title">{t('summary.title')}</h2>
                     <p className="result-subtitle">
-                        10장의 카드가 전하는 메시지
+                        {t('summary.subtitle')}
                     </p>
                 </header>
 
@@ -257,7 +249,7 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                                         <span className="typing-indicator">
                                             <span></span><span></span><span></span>
                                         </span>
-                                        전문가가 종합 해석 중...
+                                        {t('summary.loading')}
                                     </div>
                                 )}
                                 <div
@@ -270,9 +262,9 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                         {summaryComplete && (
                             <div style={{ textAlign: 'center', marginTop: '20px' }}>
                                 <div className="complete-section">
-                                    <p className="complete-message">모든 해석이 완료되었습니다</p>
+                                    <p className="complete-message"></p>
                                     <button className="mystical-button" onClick={onRestart}>
-                                        다시 시작하기
+                                        {t('summary.restart')}
                                     </button>
                                 </div>
                             </div>
@@ -284,11 +276,11 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
     }
 
     return (
-        <section className="result-screen" aria-label="타로 카드 해석 결과">
+        <section className="result-screen" aria-label="Tarot Reading">
             <header className="result-header">
-                <h2 className="result-title">당신의 운명</h2>
+                <h2 className="result-title">{t('reading.title')}</h2>
                 <p className="result-subtitle">
-                    <span style={{ color: 'var(--color-accent-rose)', fontWeight: 'bold' }}>{currentIndex + 1}번째 카드</span> / 10장
+                    <span style={{ color: 'var(--color-accent-rose)', fontWeight: 'bold' }}>{t('reading.cardCount', { current: currentIndex + 1 })}</span> / {t('reading.totalCards')}
                 </p>
             </header>
 
@@ -299,14 +291,14 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                 >
                     <div className="single-card-inner">
                         <div className="single-card-back">
-                            <img src="/cards/back.png" alt="카드 뒷면" />
-                            {!isFlipped && <div className="click-hint">클릭하여 뒤집기</div>}
+                            <img src="/cards/back.png" alt={t('reading.cardBack')} />
+                            {!isFlipped && <div className="click-hint">{t('reading.flipHint')}</div>}
                         </div>
                         <div className="single-card-front">
                             {isFlipped && (
                                 <img
                                     src={currentCard.image || "/cards/back.png"}
-                                    alt={currentCard.name_kr}
+                                    alt={currentCard[`name_${currentLang}`] || currentCard.name || currentCard.name_kr}
                                     className={currentCard.isReversed ? 'reversed' : ''}
                                 />
                             )}
@@ -321,15 +313,15 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                         <div className="interpretation-header">
                             <span className="position-number">{toRoman(currentIndex)}</span>
                             <div className="position-info">
-                                <h3 className="position-title">{positionMeanings[currentIndex].title}</h3>
-                                <p className="position-desc">{positionMeanings[currentIndex].description}</p>
+                                <h3 className="position-title">{t(`reading.positions`)[currentIndex]?.title}</h3>
+                                <p className="position-desc">{t(`reading.positions`)[currentIndex]?.description}</p>
                             </div>
                         </div>
                         <div className="interpretation-body">
                             <p className="card-selected-name">
-                                <strong>{currentCard.name_kr}</strong>
+                                <strong>{currentCard[`name_${currentLang}`] || currentCard.name || currentCard.name_kr}</strong>
                                 {currentCard.isReversed && (
-                                    <span className="reversed-badge">역방향</span>
+                                    <span className="reversed-badge">{t('reading.reversed')}</span>
                                 )}
                             </p>
 
@@ -343,7 +335,7 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                                         <span className="typing-indicator">
                                             <span></span><span></span><span></span>
                                         </span>
-                                        전문가가 해석 중...
+                                        {t('reading.loading')}
                                     </div>
                                 )}
                                 <div
@@ -356,19 +348,19 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
                         <div style={{ textAlign: 'center', marginTop: '20px' }}>
                             {!isLastCard && streamComplete && (
                                 <button className="mystical-button next-button" onClick={handleNextCard}>
-                                    다음 카드
+                                    {t('reading.nextCard')}
                                 </button>
                             )}
                             {isLastCard && streamComplete && (
                                 <button className="mystical-button glow-pulse" onClick={fetchFinalSummary}>
-                                    종합 운세 보기
+                                    {t('reading.viewSummary')}
                                 </button>
                             )}
                         </div>
                     </article>
                 ) : (
                     <div className="interpretation-placeholder">
-                        <p>카드를 클릭하여 운명을 확인하세요</p>
+                        <p>{t('reading.placeholder')}</p>
                     </div>
                 )}
             </div>
@@ -376,7 +368,7 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart }) => {
             {!isStreaming && (
                 <div style={{ textAlign: 'center', marginTop: '15px' }}>
                     <button className="skip-to-summary-btn" onClick={fetchFinalSummary}>
-                        최종 운세 보기<br />
+                        {t('reading.skipToSummary')}<br />
                         <span className="skip-label">Skip</span>
                     </button>
                 </div>

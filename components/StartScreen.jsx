@@ -1,14 +1,17 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './StartScreen.css';
 
 const StartScreen = ({ onStart }) => {
+    const { t } = useLanguage();
+
     return (
-        <section className="start-screen" aria-label="타로 카드 시작 화면">
+        <section className="start-screen" aria-label="Tarot Start">
             <div className="start-content">
                 <div className="logo-container floating">
                     <div className="moon-symbol">☽</div>
                     <h1 className="main-title">Lumina Tarot</h1>
-                    <p className="subtitle">운명의 카드가 당신을 기다립니다</p>
+                    <p className="subtitle">{t('start.subtitle')}</p>
                 </div>
 
                 <div className="decorative-line" aria-hidden="true">
@@ -20,12 +23,12 @@ const StartScreen = ({ onStart }) => {
                 </div>
 
                 <p className="intro-text">
-                    78장의 신비로운 카드 중<br />
-                    당신의 운명을 밝혀줄 10장을 선택하세요
+                    {t('start.introText1')}<br />
+                    {t('start.introText2')}
                 </p>
 
-                <button className="mystical-button glow-pulse" onClick={onStart} aria-label="타로 카드 운세 시작하기">
-                    시작하기
+                <button className="mystical-button glow-pulse" onClick={onStart} aria-label="Start tarot reading">
+                    {t('start.startButton')}
                 </button>
 
                 <div className="card-preview" aria-hidden="true">
@@ -39,4 +42,3 @@ const StartScreen = ({ onStart }) => {
 };
 
 export default StartScreen;
-

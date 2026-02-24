@@ -1,0 +1,122 @@
+{
+    "start": {
+        "subtitle": "命运之牌正在等待你",
+        "introText1": "从78张神秘的塔罗牌中",
+        "introText2": "选择10张揭示你的命运",
+        "startButton": "开始"
+    },
+    "category": {
+        "title": "你想了解哪方面的运势？",
+        "subtitle": "请选择你感兴趣的领域",
+        "love": "爱情运",
+        "loveDesc": "恋爱与感情的运势",
+        "job": "事业运",
+        "jobDesc": "求职与职业发展运势",
+        "business": "生意运",
+        "businessDesc": "商业与投资的运势",
+        "money": "财运",
+        "moneyDesc": "财富与金钱的运势",
+        "study": "学业运",
+        "studyDesc": "学习与考试的运势"
+    },
+    "situation": {
+        "title": "请描述你的现状",
+        "subtitle": "分享你的困扰，以获得更精准的解读",
+        "placeholder": "请在此描述你目前的状况。",
+        "submit": "抽牌",
+        "skip": "跳过"
+    },
+    "shuffle": {
+        "shuffling": "正在洗牌...",
+        "ready": "准备就绪！",
+        "hint": "命运之牌正在被洗匀...",
+        "complete": "现在选择你的牌吧"
+    },
+    "select": {
+        "title": "选择你的牌",
+        "subtitle": "跟随直觉选择{count}张牌",
+        "selectAll": "一次全部抽取",
+        "confirm": "揭示命运",
+        "moreCards": "还需选择{count}张",
+        "cardMeanings": [
+            "第一张牌代表你的当前状况。",
+            "第二张牌揭示阻碍你前行的障碍。",
+            "第三张牌揭示你的潜意识、隐藏的欲望和问题的本质。",
+            "第四张牌反映你近期的过去。",
+            "第五张牌展示正在浮现的影响力和未来的可能性。",
+            "第六张牌揭示不久后将发生的事。",
+            "第七张牌反映你如何看待自己以及内心的感受。",
+            "第八张牌代表周围人的想法和对你的影响。",
+            "第九张牌揭示你内心深处的希望与恐惧。",
+            "第十张牌揭示最终的结果。",
+            "一起来看看命运为你准备了什么吧。"
+        ]
+    },
+    "carousel": {
+        "selectCard": "选择这张牌",
+        "cancelCard": "取消第{n}张",
+        "hint": "← 滑动浏览卡牌 →"
+    },
+    "reading": {
+        "title": "你的命运",
+        "cardCount": "第{current}张牌",
+        "totalCards": "共10张",
+        "cardBack": "牌背面",
+        "flipHint": "点击翻牌",
+        "reversed": "逆位",
+        "loading": "解牌师正在解读...",
+        "nextCard": "下一张",
+        "viewSummary": "查看综合解读",
+        "placeholder": "点击卡牌揭示你的命运",
+        "skipToSummary": "查看综合解读",
+        "positions": [
+            {
+                "title": "当前状况",
+                "description": "代表你目前面临的处境。"
+            },
+            {
+                "title": "阻碍因素",
+                "description": "正在阻碍你前进的障碍和挑战。"
+            },
+            {
+                "title": "潜意识",
+                "description": "隐藏的欲望、潜意识以及问题的根源。"
+            },
+            {
+                "title": "过去",
+                "description": "影响当下的近期事件。"
+            },
+            {
+                "title": "可能性",
+                "description": "正在浮现的影响力和未来的机遇。"
+            },
+            {
+                "title": "近期未来",
+                "description": "不久后即将发生的事。"
+            },
+            {
+                "title": "自我认知",
+                "description": "你对自己的看法和内在情感。"
+            },
+            {
+                "title": "周围环境",
+                "description": "周围人的想法和对你的影响。"
+            },
+            {
+                "title": "希望与恐惧",
+                "description": "你内心深处的期望和隐忧。"
+            },
+            {
+                "title": "最终结果",
+                "description": "事情的最终结局。"
+            }
+        ]
+    },
+    "summary": {
+        "title": "综合运势解读",
+        "subtitle": "10张牌传递的信息",
+        "loading": "正在为你撰写综合解读...",
+        "restart": "重新开始",
+        "viewerHint": "← 滑动查看你的牌 →"
+    }
+}
