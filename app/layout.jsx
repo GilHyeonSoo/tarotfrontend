@@ -18,6 +18,17 @@ const cormorantGaramond = Cormorant_Garamond({
     display: 'swap',
 });
 
+export const viewport = {
+    themeColor: [
+        { media: '(prefers-color-scheme: light)', color: '#0f0a1e' },
+        { media: '(prefers-color-scheme: dark)', color: '#0f0a1e' }
+    ],
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+};
+
 export const metadata = {
     metadataBase: new URL('https://tarotlumina.pe.kr'),
     title: '루미나 타로 - AI 타로 카드 운세 | Lumina Tarot',
@@ -26,6 +37,13 @@ export const metadata = {
     manifest: '/manifest.json',
     alternates: {
         canonical: '/',
+        languages: {
+            'ko-KR': '/',
+            'en-US': '/en',
+            'zh-CN': '/zh',
+            'ja-JP': '/ja',
+            'x-default': '/'
+        },
     },
     openGraph: {
         title: '루미나 타로 - AI 타로 카드 운세 | Lumina Tarot',
