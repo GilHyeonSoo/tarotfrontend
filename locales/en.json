@@ -118,5 +118,15 @@
         "loading": "Preparing your complete reading...",
         "restart": "Start Over",
         "viewerHint": "← Swipe to view your cards →"
+    },
+    "feedback": {
+        "button": "Send Feedback",
+        "title": "Moonlight Mailbox",
+        "subtitle": "Share your thoughts or suggest new features to the developer. Your voice brings new magic to our tarot.",
+        "placeholder": "Freely write your feedback here...",
+        "submit": "Send Message",
+        "sending": "Sending...",
+        "close": "Close",
+        "success": "Your precious feedback has been safely delivered. Thank you!"
     }
 }

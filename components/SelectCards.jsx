@@ -219,7 +219,7 @@ const SelectCards = ({ cards, onComplete }) => {
             )}
 
             <footer className="select-footer">
-                {isMobile && selectedCards.length === 0 && (
+                {selectedCards.length === 0 && (
                     <button
                         className="select-all-btn"
                         onClick={handleSelectAll}

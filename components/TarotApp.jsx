@@ -10,6 +10,7 @@ import SituationInput from '@/components/SituationInput';
 import ShuffleScreen from '@/components/ShuffleScreen';
 import SelectCards from '@/components/SelectCards';
 import ReadingResult from '@/components/ReadingResult';
+import FeedbackModal from '@/components/FeedbackModal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -228,6 +229,8 @@ function TarotAppContent() {
                     />
                 )}
             </div>
+
+            {currentScreen !== SCREENS.RESULT && <FeedbackModal />}
         </main>
     );
 }

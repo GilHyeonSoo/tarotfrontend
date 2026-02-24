@@ -5,13 +5,16 @@
     padding: 20px;
     position: relative;
     z-index: 1;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .select-header {
     text-align: center;
     padding: 15px 0 20px;
     flex-shrink: 0;
+    position: relative;
+    z-index: 10;
 }
 
 .select-title {
@@ -71,7 +74,8 @@
     border-radius: 15px;
     animation: meaningFade 0.4s ease;
     position: relative;
-    z-index: 50;
+    z-index: 1;
+    /* z-index 낮춤 확정 */
 }
 
 @keyframes meaningFade {
@@ -114,6 +118,9 @@
     gap: 40px;
     overflow-x: auto;
     overflow-y: visible;
+    position: relative;
+    z-index: 100;
+    /* 카드들이 위로 올라올 수 있도록 z-index 높임 */
 }
 
 .cards-horizontal {
@@ -261,9 +268,37 @@
 
 /* Footer */
 .select-footer {
-    padding: 15px 0;
-    text-align: center;
+    padding: 15px 0 30px;
+    /* 아래쪽 여백 추가 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
     flex-shrink: 0;
+    position: relative;
+    z-index: 100;
+}
+
+.select-all-btn {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    padding: 12px 30px;
+    background: transparent;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 50px;
+    color: var(--color-accent-gold);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.8;
+}
+
+.select-all-btn:hover {
+    background: rgba(212, 175, 55, 0.1);
+    opacity: 1;
+}
+
+.select-all-btn:active {
+    transform: scale(0.95);
 }
 
 .mystical-button.disabled {
@@ -456,20 +491,7 @@
     }
 
     .select-all-btn {
-        font-family: var(--font-heading);
         font-size: 0.85rem;
         padding: 8px 24px;
-        background: transparent;
-        border: 1px solid rgba(212, 175, 55, 0.4);
-        border-radius: 50px;
-        color: var(--color-accent-gold);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        opacity: 0.8;
-    }
-
-    .select-all-btn:active {
-        transform: scale(0.95);
-        background: rgba(212, 175, 55, 0.1);
     }
 }
