@@ -2,12 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage, LANGUAGES } from '../contexts/LanguageContext';
 import './LanguageSelector.css';
 
-const LanguageSelector = () => {
+const LanguageSelector = ({ variant = 'fixed' }) => {
     const { language, setLanguage } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
-
-    const currentLang = LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
 
     // 외부 클릭 시 닫기
     useEffect(() => {
@@ -26,15 +24,14 @@ const LanguageSelector = () => {
     };
 
     return (
-        <div className="language-selector" ref={dropdownRef}>
+        <div className={`language-selector ${variant === 'shell' ? 'is-shell' : ''}`} ref={dropdownRef}>
             <button
                 className="language-toggle"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-label="Select language"
                 aria-expanded={isOpen}
             >
-                <span className="lang-flag">{currentLang.flag}</span>
-                <span className="lang-name">{currentLang.name}</span>
+                <span className="lang-name">Language</span>
                 <span className={`lang-arrow ${isOpen ? 'open' : ''}`}>▾</span>
             </button>
 

@@ -1,0 +1,94 @@
+.mobile-shell-frame {
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    background: transparent;
+}
+
+.mobile-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 430px;
+    min-height: 100dvh;
+    overflow: hidden;
+    box-shadow:
+        0 0 0 1px rgba(212, 175, 55, 0.14),
+        0 0 80px rgba(0, 0, 0, 0.55);
+}
+
+.mobile-shell-header {
+    position: relative;
+    z-index: 100;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding:
+        max(10px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        10px
+        max(12px, env(safe-area-inset-left));
+    border-bottom: none;
+    background: transparent;
+    backdrop-filter: none;
+}
+
+.mobile-shell-back,
+.mobile-shell-back-spacer {
+    width: 44px;
+    height: 44px;
+}
+
+.mobile-shell-back {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.mobile-shell-back-icon {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.2s ease;
+}
+
+.mobile-shell-back:active {
+    transform: scale(0.94);
+}
+
+.mobile-shell-back:focus-visible {
+    outline: 1px solid rgba(212, 175, 55, 0.6);
+    outline-offset: 2px;
+    border-radius: 50%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .mobile-shell-back:hover .mobile-shell-back-icon {
+        filter:
+            drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))
+            drop-shadow(0 0 6px rgba(212, 175, 55, 0.45));
+    }
+}
+
+.mobile-shell-header .language-selector.is-shell {
+    margin-left: auto;
+}
+
+.mobile-shell-content {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}

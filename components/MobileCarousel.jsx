@@ -1,11 +1,27 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, {
+    useState,
+    useRef,
+    useEffect,
+    useCallback,
+    forwardRef,
+    useImperativeHandle,
+} from 'react';
+import { flushSync } from 'react-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './MobileCarousel.css';
 
-const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
+const MobileCarousel = forwardRef(({
+    cards,
+    selectedCardIds,
+    selectedCount,
+    onCardAdd,
+    onConfirm,
+    maxCards,
+}, ref) => {
     const { t } = useLanguage();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
 
     const carouselRef = useRef(null);
     const startX = useRef(0);
@@ -15,20 +31,29 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
     const animationRef = useRef(null);
     const isDraggingRef = useRef(false);
     const currentIndexRef = useRef(0);
-    const dragOffsetRef = useRef(0); // 픽셀 단위 누적 드래그
+    const dragOffsetRef = useRef(0);
+    const scrollQueueRef = useRef(Promise.resolve());
+    const isProgrammaticScrollRef = useRef(false);
 
     const totalCards = cards.length;
     const CARD_SPACING = 85;
-    // 충분히 많은 카드를 렌더해서 드래그 중 빈 공간 방지
     const VISIBLE_RANGE = 20;
+    const selectedIdSet = new Set(selectedCardIds);
+    const allSelected = selectedCount >= maxCards;
 
-    const wrapIndex = (idx) => {
+    const wrapIndex = useCallback((idx) => {
         let i = idx % totalCards;
         if (i < 0) i += totalCards;
         return i;
-    };
+    }, [totalCards]);
 
-    // 카드 스타일 계산
+    const normalizeShift = useCallback((from, to) => {
+        let diff = from - to;
+        while (diff > totalCards / 2) diff -= totalCards;
+        while (diff < -totalCards / 2) diff += totalCards;
+        return diff;
+    }, [totalCards]);
+
     const getCardStyle = (fractionalOffset) => {
         const baseX = fractionalOffset * CARD_SPACING;
         const dist = Math.abs(fractionalOffset);
@@ -40,11 +65,10 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         return {
             transform: `translate3d(${baseX}px, ${translateY}px, 0) scale(${scale}) rotate(${rotateZ}deg)`,
             opacity,
-            zIndex: 10 - Math.round(dist)
+            zIndex: 10 - Math.round(dist),
         };
     };
 
-    // DOM 직접 업데이트 (React 리렌더 없음)
     const updateDOM = useCallback((pixelOffset) => {
         const container = carouselRef.current;
         if (!container) return;
@@ -53,7 +77,7 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         const cardElements = container.querySelectorAll('.carousel-card');
 
         cardElements.forEach((el) => {
-            const slot = parseInt(el.dataset.slot);
+            const slot = parseInt(el.dataset.slot, 10);
             const effectivePos = slot + fraction;
             const style = getCardStyle(effectivePos);
 
@@ -64,12 +88,8 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         });
     }, []);
 
-    // 스냅 애니메이션 (드래그 끝난 후)
     const snapToNearest = useCallback((fromPixel) => {
-        const fromFraction = fromPixel / CARD_SPACING;
-        const targetCards = Math.round(fromFraction);
-        const targetPixel = targetCards * CARD_SPACING;
-
+        const targetPixel = Math.round(fromPixel / CARD_SPACING) * CARD_SPACING;
         const startTime = performance.now();
         const duration = 280;
         setIsAnimating(true);
@@ -77,31 +97,135 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         const animate = (now) => {
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+            const eased = 1 - Math.pow(1 - progress, 3);
             const current = fromPixel + (targetPixel - fromPixel) * eased;
 
             updateDOM(current);
-            dragOffsetRef.current = current; // 매 프레임마다 동기화 (중간 터치 대비)
+            dragOffsetRef.current = current;
 
             if (progress < 1) {
                 animationRef.current = requestAnimationFrame(animate);
             } else {
-                // 최종: 인덱스 반영
                 const shift = Math.round(targetPixel / CARD_SPACING);
                 currentIndexRef.current = wrapIndex(currentIndexRef.current - shift);
                 setCurrentIndex(currentIndexRef.current);
                 dragOffsetRef.current = 0;
                 setIsAnimating(false);
+                animationRef.current = null;
             }
         };
 
         animationRef.current = requestAnimationFrame(animate);
-    }, [updateDOM, totalCards]);
+    }, [updateDOM, wrapIndex]);
 
-    // 모멘텀 애니메이션
+    const settleCarouselOffset = useCallback(() => {
+        if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+            animationRef.current = null;
+        }
+
+        if (isProgrammaticScrollRef.current) {
+            dragOffsetRef.current = 0;
+            updateDOM(0);
+            setIsAnimating(false);
+            isProgrammaticScrollRef.current = false;
+            return;
+        }
+
+        const shift = Math.round(dragOffsetRef.current / CARD_SPACING);
+        if (shift !== 0) {
+            currentIndexRef.current = wrapIndex(currentIndexRef.current - shift);
+            setCurrentIndex(currentIndexRef.current);
+        }
+
+        dragOffsetRef.current = 0;
+        updateDOM(0);
+        setIsAnimating(false);
+    }, [updateDOM, wrapIndex]);
+
+    const runScrollToDeckIndex = useCallback((targetIndex, options = {}) => {
+        const { slow = false } = options;
+
+        return new Promise((resolve) => {
+            if (!totalCards) {
+                resolve();
+                return;
+            }
+
+            settleCarouselOffset();
+
+            const fromIndex = currentIndexRef.current;
+            const normalizedTarget = wrapIndex(targetIndex);
+            const diff = normalizeShift(fromIndex, normalizedTarget);
+
+            if (diff === 0) {
+                dragOffsetRef.current = 0;
+                updateDOM(0);
+                resolve();
+                return;
+            }
+
+            isProgrammaticScrollRef.current = true;
+
+            flushSync(() => {
+                currentIndexRef.current = normalizedTarget;
+                setCurrentIndex(normalizedTarget);
+            });
+
+            const startPixel = diff * CARD_SPACING;
+            dragOffsetRef.current = startPixel;
+            updateDOM(startPixel);
+
+            const startTime = performance.now();
+            const duration = slow
+                ? Math.min(900, Math.max(480, Math.abs(diff) * 72))
+                : Math.min(560, Math.max(280, Math.abs(diff) * 45));
+            setIsAnimating(true);
+
+            const animate = (now) => {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const currentPixel = startPixel * (1 - eased);
+
+                dragOffsetRef.current = currentPixel;
+                updateDOM(currentPixel);
+
+                if (progress < 1) {
+                    animationRef.current = requestAnimationFrame(animate);
+                } else {
+                    dragOffsetRef.current = 0;
+                    updateDOM(0);
+                    setIsAnimating(false);
+                    animationRef.current = null;
+                    isProgrammaticScrollRef.current = false;
+                    resolve();
+                }
+            };
+
+            animationRef.current = requestAnimationFrame(animate);
+        });
+    }, [normalizeShift, settleCarouselOffset, totalCards, updateDOM, wrapIndex]);
+
+    const scrollToDeckIndex = useCallback((targetIndex, options) => {
+        const nextScroll = scrollQueueRef.current
+            .then(() => runScrollToDeckIndex(targetIndex, options));
+
+        scrollQueueRef.current = nextScroll.catch(() => {});
+        return nextScroll;
+    }, [runScrollToDeckIndex]);
+
+    useImperativeHandle(ref, () => ({
+        getCenterCardRect: () => {
+            const el = carouselRef.current?.querySelector('.carousel-card[data-slot="0"]');
+            return el?.getBoundingClientRect() ?? carouselRef.current?.getBoundingClientRect() ?? null;
+        },
+        scrollToDeckIndex,
+    }), [scrollToDeckIndex]);
+
     const animateMomentum = useCallback((initialVelocity) => {
-        let vel = initialVelocity; // px/ms
-        let pos = dragOffsetRef.current; // 현재 픽셀 오프셋에서 시작
+        let vel = initialVelocity;
+        let pos = dragOffsetRef.current;
         const friction = 0.97;
         const minVelocity = 0.05;
 
@@ -109,15 +233,14 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
 
         const animate = () => {
             vel *= friction;
-            pos += vel * 16; // ~60fps
+            pos += vel * 16;
 
             updateDOM(pos);
-            dragOffsetRef.current = pos; // 매 프레임마다 동기화 (중간 터치 대비)
+            dragOffsetRef.current = pos;
 
             if (Math.abs(vel) > minVelocity) {
                 animationRef.current = requestAnimationFrame(animate);
             } else {
-                // 모멘텀 끝 → 가장 가까운 카드로 스냅
                 dragOffsetRef.current = pos;
                 snapToNearest(pos);
             }
@@ -126,17 +249,15 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         animationRef.current = requestAnimationFrame(animate);
     }, [updateDOM, snapToNearest]);
 
-    // 터치 이벤트 (native)
     useEffect(() => {
         const el = carouselRef.current;
-        if (!el) return;
+        if (!el) return undefined;
 
         const handleTouchStart = (e) => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
                 animationRef.current = null;
 
-                // 모멘텀 중단 시, 현재 시각적 위치를 currentIndex에 반영
                 const shift = Math.round(dragOffsetRef.current / CARD_SPACING);
                 if (shift !== 0) {
                     currentIndexRef.current = wrapIndex(currentIndexRef.current - shift);
@@ -145,6 +266,7 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
             }
             setIsAnimating(false);
             isDraggingRef.current = true;
+            setIsDragging(true);
 
             const touch = e.touches[0];
             startX.current = touch.clientX;
@@ -170,8 +292,6 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
 
             lastX.current = clientX;
             lastTime.current = now;
-
-            // 순수 픽셀 오프셋 - setState 절대 안 함
             dragOffsetRef.current = clientX - startX.current;
             updateDOM(dragOffsetRef.current);
         };
@@ -179,6 +299,7 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         const handleTouchEnd = () => {
             if (!isDraggingRef.current) return;
             isDraggingRef.current = false;
+            setIsDragging(false);
 
             if (Math.abs(velocity.current) > 0.15) {
                 animateMomentum(velocity.current);
@@ -196,15 +317,13 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
             el.removeEventListener('touchmove', handleTouchMove);
             el.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [updateDOM, animateMomentum, snapToNearest]);
+    }, [updateDOM, animateMomentum, snapToNearest, totalCards, wrapIndex]);
 
-    // 마우스 이벤트 (데스크톱)
     const handleMouseDown = (e) => {
         if (animationRef.current) {
             cancelAnimationFrame(animationRef.current);
             animationRef.current = null;
 
-            // 모멘텀 중단 시, 현재 시각적 위치를 currentIndex에 반영
             const shift = Math.round(dragOffsetRef.current / CARD_SPACING);
             if (shift !== 0) {
                 currentIndexRef.current = wrapIndex(currentIndexRef.current - shift);
@@ -213,6 +332,7 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         }
         setIsAnimating(false);
         isDraggingRef.current = true;
+        setIsDragging(true);
         startX.current = e.clientX;
         lastX.current = e.clientX;
         lastTime.current = performance.now();
@@ -233,7 +353,6 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
 
         lastX.current = clientX;
         lastTime.current = now;
-
         dragOffsetRef.current = clientX - startX.current;
         updateDOM(dragOffsetRef.current);
     };
@@ -241,6 +360,7 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
     const handleMouseUp = () => {
         if (!isDraggingRef.current) return;
         isDraggingRef.current = false;
+        setIsDragging(false);
 
         if (Math.abs(velocity.current) > 0.15) {
             animateMomentum(velocity.current);
@@ -253,46 +373,36 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
         if (isDraggingRef.current) handleMouseUp();
     };
 
-    // 동기화
     useEffect(() => {
         currentIndexRef.current = currentIndex;
     }, [currentIndex]);
 
-    // 카드 선택
     const centerCard = cards[currentIndex];
-    const handleSelectCard = () => {
-        if (!centerCard || isAnimating) return;
+    const isCenterEmpty = centerCard && selectedIdSet.has(centerCard.id);
 
-        const isAlreadySelected = selectedCards.find(c => c.id === centerCard.id);
-        if (isAlreadySelected) {
-            onCardSelect(selectedCards.filter(c => c.id !== centerCard.id));
-        } else if (selectedCards.length < maxCards) {
-            const cardWithReversed = {
-                ...centerCard,
-                isReversed: Math.random() < 0.5
-            };
-            onCardSelect([...selectedCards, cardWithReversed]);
+    const getCenterCardRect = () => {
+        const el = carouselRef.current?.querySelector('.carousel-card[data-slot="0"]');
+        return el?.getBoundingClientRect() ?? null;
+    };
+
+    const handleSelectCard = () => {
+        if (isAnimating) return;
+
+        if (allSelected) {
+            onConfirm?.();
+            return;
+        }
+
+        if (!centerCard || isCenterEmpty) return;
+
+        if (selectedCount < maxCards) {
+            onCardAdd(centerCard, getCenterCardRect(), currentIndex);
         }
     };
 
-    // 한번에 모두 뽑기
-    const handleSelectAll = () => {
-        if (isAnimating || selectedCards.length > 0) return;
-        const shuffled = [...cards].sort(() => Math.random() - 0.5);
-        const picked = shuffled.slice(0, maxCards).map(card => ({
-            ...card,
-            isReversed: Math.random() < 0.5
-        }));
-        onCardSelect(picked);
-    };
-
-    const isCenterSelected = selectedCards.find(c => c.id === centerCard?.id);
-    const selectedCardIndex = selectedCards.findIndex(c => c.id === centerCard?.id);
-
-    // 넉넉하게 카드 렌더 (-10 ~ +10 = 21장)
     const getVisibleCards = () => {
         const visible = [];
-        for (let i = -VISIBLE_RANGE; i <= VISIBLE_RANGE; i++) {
+        for (let i = -VISIBLE_RANGE; i <= VISIBLE_RANGE; i += 1) {
             const cardIndex = wrapIndex(currentIndex + i);
             const card = cards[cardIndex];
             if (card) {
@@ -305,9 +415,12 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
     const visibleCards = getVisibleCards();
 
     useEffect(() => {
-        return () => {
-            if (animationRef.current) cancelAnimationFrame(animationRef.current);
-        };
+        const preload = new Image();
+        preload.src = '/cards/back.png';
+    }, []);
+
+    useEffect(() => () => {
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
     }, []);
 
     return (
@@ -319,28 +432,30 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
-                style={{ cursor: isDraggingRef.current ? 'grabbing' : 'grab' }}
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
             >
+                <div className="card-halo" aria-hidden="true" />
                 <div className="carousel-cards">
                     {visibleCards.map(({ card, slot }) => {
-                        const isSelected = selectedCards.find(c => c.id === card.id);
-                        const cardSelectedIdx = selectedCards.findIndex(c => c.id === card.id);
+                        const isPicked = selectedIdSet.has(card.id);
                         const style = getCardStyle(slot);
 
                         return (
                             <div
-                                key={`${currentIndex}-${slot}`}
+                                key={card.id}
                                 data-slot={slot}
-                                className={`carousel-card ${isSelected ? 'selected' : ''} ${slot === 0 ? 'center' : ''}`}
+                                className={`carousel-card ${slot === 0 ? 'center' : ''} ${isPicked ? 'carousel-card--empty' : ''}`}
                                 style={{
                                     ...style,
-                                    transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
-                                    willChange: 'transform, opacity'
+                                    transition: isAnimating
+                                        ? 'none'
+                                        : 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
+                                    willChange: 'transform, opacity',
                                 }}
                             >
-                                <img src="/cards/back.png" alt="카드" draggable="false" />
-                                {isSelected && (
-                                    <div className="carousel-badge">{cardSelectedIdx + 1}</div>
+                                <div className="carousel-card-face" aria-hidden="true" />
+                                {isPicked && (
+                                    <div className="carousel-card-empty" aria-hidden="true" />
                                 )}
                             </div>
                         );
@@ -353,16 +468,19 @@ const MobileCarousel = ({ cards, selectedCards, onCardSelect, maxCards }) => {
             </div>
 
             <button
-                className={`carousel-select-btn ${isCenterSelected ? 'cancel' : ''} ${selectedCards.length >= maxCards && !isCenterSelected ? 'disabled' : ''}`}
+                type="button"
+                className={`mystical-button carousel-select-btn ${allSelected ? 'ready' : ''}`}
                 onClick={handleSelectCard}
-                disabled={(selectedCards.length >= maxCards && !isCenterSelected) || isAnimating}
+                disabled={isAnimating}
             >
-                {isCenterSelected ? t('carousel.cancelCard', { n: selectedCardIndex + 1 }) : t('carousel.selectCard')}
+                {allSelected ? t('select.confirm') : t('carousel.selectCard')}
             </button>
 
             <p className="carousel-hint">{t('carousel.hint')}</p>
         </div>
     );
-};
+});
+
+MobileCarousel.displayName = 'MobileCarousel';
 
 export default MobileCarousel;

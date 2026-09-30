@@ -1,6 +1,8 @@
 /* Google Fonts loaded via next/font/google in layout.jsx */
 
 :root {
+  --mobile-shell-max: 430px;
+  --mobile-header-height: 64px;
   /* Colors */
   --color-bg-primary: #0a0a14;
   --color-bg-secondary: #12122a;
@@ -18,9 +20,9 @@
   --gradient-gold: linear-gradient(135deg, #d4af37 0%, #f4cf67 50%, #d4af37 100%);
   --gradient-cosmic: radial-gradient(ellipse at center, #1a1a3a 0%, #0a0a14 100%);
 
-  /* Typography */
-  --font-heading: 'Cinzel', serif;
-  --font-body: 'Cormorant Garamond', serif;
+  /* Typography. Latin stays Cinzel / Cormorant; Hangul falls through to Nanum Myeongjo. */
+  --font-heading: var(--font-cinzel), var(--font-nanum), serif;
+  --font-body: var(--font-cormorant), var(--font-nanum), serif;
 
   /* Shadows */
   --shadow-glow: 0 0 30px rgba(212, 175, 55, 0.3);
@@ -42,70 +44,25 @@ body,
 
 body {
   font-family: var(--font-body);
-  background: var(--gradient-bg);
+  background: transparent;
   color: var(--color-text-primary);
   overflow-x: hidden;
-  min-height: 100vh;
+  min-height: 100dvh;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* Stars Background */
-.stars-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
+html,
+body,
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.star {
-  position: absolute;
-  background: white;
-  border-radius: 50%;
-  animation: twinkle var(--duration) ease-in-out infinite;
-}
-
-@keyframes twinkle {
-
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-}
-
-/* Constellation Styles */
-.constellation {
-  opacity: 0.6;
-}
-
-.constellation-line {
-  filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.6));
-}
-
-.constellation-star {
-  fill: rgba(255, 255, 255, 0.9);
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
-  animation: constellationTwinkle 4s ease-in-out infinite;
-}
-
-@keyframes constellationTwinkle {
-
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-
-  50% {
-    opacity: 1;
-  }
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Card Styles */
@@ -249,47 +206,72 @@ body {
 
 /* Button Styles */
 .mystical-button {
-  font-family: var(--font-heading);
-  font-size: 1.2rem;
-  padding: 18px 50px;
-  background: var(--gradient-gold);
-  border: none;
-  border-radius: 50px;
-  color: #1a1a3a;
-  cursor: pointer;
+  --mystic-shadow-base:
+    0 8px 22px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(244, 207, 103, 0.14),
+    inset 0 0 20px rgba(0, 0, 0, 0.35);
   position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-glow);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 14px 28px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 12px;
+  /* Inner frame: outline follows border-radius in modern browsers. */
+  outline: 1px solid rgba(212, 175, 55, 0.24);
+  outline-offset: -5px;
+  background:
+    radial-gradient(120% 110% at 50% 0%, rgba(212, 175, 55, 0.14) 0%, transparent 60%),
+    radial-gradient(90% 120% at 50% 100%, rgba(139, 92, 246, 0.12) 0%, transparent 65%),
+    linear-gradient(180deg, rgba(28, 25, 58, 0.96) 0%, rgba(14, 12, 32, 0.96) 100%);
+  box-shadow: var(--mystic-shadow-base), 0 0 18px rgba(212, 175, 55, 0.1);
+  color: var(--color-accent-gold);
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+  cursor: pointer;
+  transition: border-color 0.2s ease, outline-color 0.2s ease, box-shadow 0.2s ease, filter 0.15s ease, transform 0.15s ease;
 }
 
-.mystical-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 50px rgba(212, 175, 55, 0.5);
+.mystical-button::before,
+.mystical-button::after {
+  content: '✦';
+  flex: none;
+  font-size: 0.6em;
+  line-height: 1;
+  color: rgba(212, 175, 55, 0.7);
+  text-shadow: none;
 }
 
-.mystical-button::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent);
-  transform: rotate(45deg);
-  animation: shimmer 3s infinite;
+.mystical-button:active:not(:disabled) {
+  transform: scale(0.985);
+  filter: brightness(1.12);
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%) rotate(45deg);
+.mystical-button:focus-visible {
+  outline-color: rgba(212, 175, 55, 0.6);
+  box-shadow: var(--mystic-shadow-base), 0 0 0 2px rgba(212, 175, 55, 0.45);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mystical-button:hover:not(:disabled) {
+    border-color: rgba(212, 175, 55, 0.75);
+    outline-color: rgba(212, 175, 55, 0.45);
+    box-shadow: var(--mystic-shadow-base), 0 0 26px rgba(212, 175, 55, 0.2);
+  }
+}
+
+@keyframes mysticPulse {
+  0%,
+  100% {
+    box-shadow: var(--mystic-shadow-base), 0 0 14px rgba(212, 175, 55, 0.12);
   }
 
-  100% {
-    transform: translateX(100%) rotate(45deg);
+  50% {
+    box-shadow: var(--mystic-shadow-base), 0 0 30px rgba(212, 175, 55, 0.32);
   }
 }
 
@@ -409,11 +391,6 @@ body {
     height: 90px;
   }
 
-  .mystical-button {
-    padding: 14px 35px;
-    font-size: 1rem;
-  }
-
   .interpretation {
     padding: 20px;
     margin: 15px;
@@ -440,16 +417,6 @@ body {
   .cards-grid .tarot-card {
     width: 45px;
     height: 75px;
-  }
-
-  .mystical-button {
-    padding: 12px 28px;
-    font-size: 0.9rem;
-    border-radius: 40px;
-  }
-
-  .mystical-button:hover {
-    transform: scale(1.03);
   }
 
   .result-cards {
@@ -516,6 +483,51 @@ body {
 
 .glow-pulse {
   animation: glowPulse 2s ease-in-out infinite;
+}
+
+.mystical-button.glow-pulse {
+  animation: mysticPulse 2s ease-in-out infinite;
+}
+
+/* Glow behind the centered card in carousels. Height must not exceed the
+   clipping wheel's height, so the glow fades out before the clip edge. */
+.card-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200px;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(244, 207, 103, 0.42) 0%,
+    rgba(244, 207, 103, 0.3) 55%,
+    rgba(212, 175, 55, 0.14) 75%,
+    rgba(139, 92, 246, 0.06) 90%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: haloBreathe 3.2s ease-in-out infinite;
+}
+
+@keyframes haloBreathe {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-halo {
+    animation: none;
+  }
 }
 
 /* Screen Reader Only - 시각적으로 숨기되 스크린 리더는 읽을 수 있음 */

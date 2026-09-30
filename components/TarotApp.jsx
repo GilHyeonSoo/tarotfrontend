@@ -2,22 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
-import LanguageSelector from '@/components/LanguageSelector';
-import Stars from '@/components/Stars';
+import MobileShell from '@/components/MobileShell';
+import NightSkyBackground from '@/components/NightSkyBackground';
 import StartScreen from '@/components/StartScreen';
-import CategorySelect from '@/components/CategorySelect';
 import SituationInput from '@/components/SituationInput';
 import ShuffleScreen from '@/components/ShuffleScreen';
 import SelectCards from '@/components/SelectCards';
 import ReadingResult from '@/components/ReadingResult';
-import FeedbackModal from '@/components/FeedbackModal';
+import PwaInstallBanner from '@/components/PwaInstallBanner';
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+import { SPREAD_TYPES } from '@/lib/spreads';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // 화면 상태
 const SCREENS = {
     START: 'start',
-    CATEGORY: 'category',
     SITUATION: 'situation',
     SHUFFLE: 'shuffle',
     SELECT: 'select',
@@ -29,7 +29,7 @@ function TarotAppContent() {
     const [currentScreen, setCurrentScreen] = useState(SCREENS.START);
     const [cards, setCards] = useState([]);
     const [selectedCards, setSelectedCards] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedSpread, setSelectedSpread] = useState(SPREAD_TYPES.CELTIC);
     const [userSituation, setUserSituation] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -132,14 +132,9 @@ function TarotAppContent() {
         }, 300);
     };
 
-    // 시작 버튼 클릭
-    const handleStart = () => {
-        changeScreen(SCREENS.CATEGORY);
-    };
-
-    // 카테고리 선택
-    const handleCategorySelect = (category) => {
-        setSelectedCategory(category);
+    // 스프레드 선택
+    const handleSpreadSelect = (spread) => {
+        setSelectedSpread(spread);
         changeScreen(SCREENS.SITUATION);
     };
 
@@ -160,69 +155,86 @@ function TarotAppContent() {
         changeScreen(SCREENS.RESULT);
     };
 
-    // 재시작 (분야 선택 페이지로)
     const handleRestart = () => {
         setSelectedCards([]);
-        setSelectedCategory(null);
         setUserSituation('');
-        changeScreen(SCREENS.CATEGORY);
+        setSelectedSpread(SPREAD_TYPES.CELTIC);
+        changeScreen(SCREENS.START);
     };
+
+    const handleBack = () => {
+        const backMap = {
+            [SCREENS.SITUATION]: SCREENS.START,
+            [SCREENS.SHUFFLE]: SCREENS.SITUATION,
+            [SCREENS.SELECT]: SCREENS.SITUATION,
+        };
+        const previous = backMap[currentScreen];
+        if (previous) changeScreen(previous);
+    };
+
+    const showBack = [SCREENS.SITUATION, SCREENS.SHUFFLE, SCREENS.SELECT].includes(currentScreen);
 
     // 로딩 화면
     if (loading && cards.length === 0) {
         return (
-            <main className="app" role="main">
-                <Stars />
-                <div className="loading-screen" aria-live="polite">
-                    <div className="loading-spinner" aria-label="Loading"></div>
-                    <p>Loading...</p>
-                </div>
-            </main>
+            <MobileShell showBack={false} showLanguage={false}>
+                <main className="app app--state" role="main">
+                    <NightSkyBackground />
+                    <div className="loading-screen" aria-live="polite">
+                        <div className="loading-spinner" aria-label="Loading"></div>
+                        <p>Loading...</p>
+                    </div>
+                </main>
+            </MobileShell>
         );
     }
 
-    // 에러 화면
     if (error && cards.length === 0) {
         return (
-            <main className="app" role="main">
-                <Stars />
-                <div className="error-screen" role="alert">
-                    <p>{error}</p>
-                    <button className="mystical-button" onClick={fetchCards}>
-                        Retry
-                    </button>
-                </div>
-            </main>
+            <MobileShell showBack={false} showLanguage={false}>
+                <main className="app app--state" role="main">
+                    <NightSkyBackground />
+                    <div className="error-screen" role="alert">
+                        <p>{error}</p>
+                        <button type="button" className="mystical-button" onClick={fetchCards}>
+                            Retry
+                        </button>
+                    </div>
+                </main>
+            </MobileShell>
         );
     }
 
     return (
-        <main className="app" role="main">
-            <Stars />
-            <LanguageSelector />
-            <div className={`screen-container ${fadeClass}`}>
+        <MobileShell
+            showBack={showBack}
+            onBack={handleBack}
+            showLanguage={currentScreen === SCREENS.START}
+        >
+            <main className="app" role="main">
+                <NightSkyBackground />
+                <ServiceWorkerRegister />
+                <div className={`screen-container ${fadeClass}`}>
                 {currentScreen === SCREENS.START && (
-                    <StartScreen onStart={handleStart} />
-                )}
-                {currentScreen === SCREENS.CATEGORY && (
-                    <CategorySelect onSelect={handleCategorySelect} />
+                    <StartScreen onSelectSpread={handleSpreadSelect} />
                 )}
                 {currentScreen === SCREENS.SITUATION && (
-                    <SituationInput
-                        category={selectedCategory}
-                        onSubmit={handleSituationSubmit}
-                    />
+                    <SituationInput onSubmit={handleSituationSubmit} />
                 )}
                 {currentScreen === SCREENS.SHUFFLE && (
                     <ShuffleScreen onComplete={handleShuffleComplete} />
                 )}
                 {currentScreen === SCREENS.SELECT && (
-                    <SelectCards cards={cards} onComplete={handleCardsSelected} />
+                    <SelectCards
+                        cards={cards}
+                        spread={selectedSpread}
+                        onComplete={handleCardsSelected}
+                    />
                 )}
                 {currentScreen === SCREENS.RESULT && (
                     <ReadingResult
                         selectedCards={selectedCards}
-                        category={selectedCategory}
+                        spread={selectedSpread}
                         situation={userSituation}
                         onRestart={handleRestart}
                         language={language}
@@ -230,8 +242,9 @@ function TarotAppContent() {
                 )}
             </div>
 
-            {currentScreen !== SCREENS.RESULT && <FeedbackModal />}
-        </main>
+            {currentScreen !== SCREENS.RESULT && <PwaInstallBanner />}
+            </main>
+        </MobileShell>
     );
 }
 

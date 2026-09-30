@@ -14,7 +14,7 @@ const CategorySelect = ({ onSelect }) => {
     ];
 
     return (
-        <section className="category-screen" aria-label="Category Select">
+        <section className="category-screen mobile-screen" aria-label="Category Select">
             <header className="category-header">
                 <h2 className="category-title">{t('category.title')}</h2>
                 <p className="category-subtitle">{t('category.subtitle')}</p>

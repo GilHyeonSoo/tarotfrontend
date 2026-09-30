@@ -1,243 +1,367 @@
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getSpreadCardCount } from '../lib/spreads';
 import './SelectCards.css';
 import MobileCarousel from './MobileCarousel';
+import SelectedTrayCarousel from './SelectedTrayCarousel';
 
+const FLY_DURATION_MS = 800;
+const SELECT_ALL_STAGGER_MS = 160;
 
+const createEmptySlots = (count) => Array.from({ length: count }, () => null);
 
-// 개별 카드 컴포넌트
-const FanCard = memo(({ card, isSelected, selectedIndex, offsetX, isHovered, onClick }) => {
-    return (
-        <div
-            className={`fan-card ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}`}
-            onClick={onClick}
-            style={{
-                '--offset-x': `${offsetX}px`,
-                '--z-index': isHovered ? 100 : (isSelected ? 90 + selectedIndex : 'var(--base-z)'),
-            }}
-        >
-            <div className="fan-card-inner">
-                <div className="fan-card-back">
-                    <img src="/cards/back.png" alt="Card back" className="card-back-image" />
-                </div>
-            </div>
-            {isSelected && (
-                <div className="selected-badge">
-                    {selectedIndex + 1}
-                </div>
-            )}
-        </div>
-    );
-});
+const countFilledSlots = (slots) => slots.filter(Boolean).length;
 
-const SelectCards = ({ cards, onComplete }) => {
+const SelectCards = ({ cards, spread, onComplete }) => {
     const { t } = useLanguage();
-    const [selectedCards, setSelectedCards] = useState([]);
+    const maxCards = getSpreadCardCount(spread);
+    const [slots, setSlots] = useState(() => createEmptySlots(maxCards));
     const [shuffledCards, setShuffledCards] = useState([]);
-    const [hoveredIndex, setHoveredIndex] = useState(null);
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
-    const maxCards = 10;
+    const [flyingCard, setFlyingCard] = useState(null);
+    const [revealedTrayIds, setRevealedTrayIds] = useState(() => new Set());
+    const carouselRef = useRef(null);
+    const trayCarouselRef = useRef(null);
+    const slotRefs = useRef([]);
+    const flyOverlayRef = useRef(null);
+    const flyResolveRef = useRef(null);
+    const isBusyRef = useRef(false);
+    const prevFilledCountRef = useRef(0);
+    const [isSelectingAll, setIsSelectingAll] = useState(false);
+    const isScrollableTray = maxCards > 3;
 
     useEffect(() => {
         const shuffled = [...cards].sort(() => Math.random() - 0.5);
         setShuffledCards(shuffled);
+        setSlots(createEmptySlots(maxCards));
+        setFlyingCard(null);
+        setRevealedTrayIds(new Set());
+    }, [cards, spread, maxCards]);
 
-        // 모바일 감지
-        const handleResize = () => setIsMobile(window.innerWidth <= 600);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [cards]);
+    const selectedCardIds = slots.filter(Boolean).map((entry) => entry.id);
+    const filledCount = countFilledSlots(slots);
 
-    // 가로 배치 계산
-    const cardWidth = 80;
-    const overlap = 50; // 겹치는 픽셀 (카드 폭 - 보이는 부분)
-    const visibleWidth = cardWidth - overlap; // 각 카드가 보이는 폭 = 15px
-
-    // 벌어짐 효과 계산
-    const getSpreadOffset = (cardIndex) => {
-        if (hoveredIndex === null) return 0;
-
-        const distance = cardIndex - hoveredIndex;
-        const maxSpread = 40; // 최대 벌어짐 픽셀
-        const spreadRange = 5; // 영향 범위
-
-        if (Math.abs(distance) > spreadRange) return 0;
-        if (distance === 0) return 0;
-
-        const intensity = 1 - (Math.abs(distance) / spreadRange);
-        const direction = distance > 0 ? 1 : -1;
-
-        return direction * maxSpread * intensity;
-    };
-
-    const handleCardClick = (card) => {
-        if (selectedCards.find(c => c.id === card.id)) {
-            setSelectedCards(selectedCards.filter(c => c.id !== card.id));
-        } else if (selectedCards.length < maxCards) {
-            // 50% 확률로 역방향 결정
-            const cardWithReversed = {
-                ...card,
-                isReversed: Math.random() < 0.5
-            };
-            setSelectedCards([...selectedCards, cardWithReversed]);
+    useEffect(() => {
+        if (!isScrollableTray || isSelectingAll) {
+            return;
         }
-    };
+
+        if (filledCount <= prevFilledCountRef.current) {
+            prevFilledCountRef.current = filledCount;
+            return;
+        }
+
+        prevFilledCountRef.current = filledCount;
+
+        const lastFilledIndex = slots.reduce(
+            (lastIndex, entry, index) => (entry ? index : lastIndex),
+            -1,
+        );
+        trayCarouselRef.current?.snapToSlot(lastFilledIndex);
+    }, [filledCount, isScrollableTray, isSelectingAll, slots]);
+
+    const getSlotRect = useCallback((slotIndex) => {
+        if (isScrollableTray && trayCarouselRef.current) {
+            trayCarouselRef.current.snapToSlot(slotIndex);
+            return trayCarouselRef.current.getCenterSlotRect();
+        }
+        const slot = slotRefs.current[slotIndex];
+        return slot?.getBoundingClientRect() ?? null;
+    }, [isScrollableTray]);
+
+    const beginFlyAnimation = useCallback((card, fromRect, toRect) => {
+        return new Promise((resolve) => {
+            if (!fromRect || !toRect) {
+                setRevealedTrayIds((prev) => new Set(prev).add(card.id));
+                resolve();
+                return;
+            }
+
+            flyResolveRef.current = resolve;
+            setFlyingCard({ card, fromRect, toRect });
+        });
+    }, []);
+
+    useLayoutEffect(() => {
+        if (!flyingCard || !flyOverlayRef.current) return undefined;
+
+        const el = flyOverlayRef.current;
+        const { fromRect, toRect } = flyingCard;
+        const dx = toRect.left - fromRect.left;
+        const dy = toRect.top - fromRect.top;
+        const scaleX = toRect.width / fromRect.width;
+        const scaleY = toRect.height / fromRect.height;
+
+        el.style.left = `${fromRect.left}px`;
+        el.style.top = `${fromRect.top}px`;
+        el.style.width = `${fromRect.width}px`;
+        el.style.height = `${fromRect.height}px`;
+        el.style.transform = 'translate(0, 0) scale(1, 1)';
+
+        let finished = false;
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            const cardId = flyingCard.card.id;
+            setFlyingCard(null);
+            setRevealedTrayIds((prev) => new Set(prev).add(cardId));
+            flyResolveRef.current?.();
+            flyResolveRef.current = null;
+        };
+
+        const animation = el.animate(
+            [
+                { transform: 'translate(0, 0) scale(1, 1)' },
+                { transform: `translate(${dx}px, ${dy}px) scale(${scaleX}, ${scaleY})` },
+            ],
+            {
+                duration: FLY_DURATION_MS,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                fill: 'forwards',
+            }
+        );
+
+        animation.onfinish = finish;
+
+        return () => {
+            finished = true;
+            animation.cancel();
+        };
+    }, [flyingCard]);
+
+    const handleCardAdd = useCallback((card, fromRect, deckIndex) => {
+        if (filledCount >= maxCards) return;
+        if (slots.some((entry) => entry?.id === card.id)) return;
+
+        const traySlotIndex = slots.findIndex((entry) => entry === null);
+        if (traySlotIndex < 0) return;
+
+        const entry = {
+            ...card,
+            isReversed: Math.random() < 0.5,
+            deckIndex,
+        };
+        const toRect = getSlotRect(traySlotIndex);
+
+        flushSync(() => {
+            setSlots((prev) => {
+                const next = [...prev];
+                next[traySlotIndex] = entry;
+                return next;
+            });
+        });
+
+        beginFlyAnimation(entry, fromRect, toRect);
+    }, [filledCount, maxCards, slots, getSlotRect, beginFlyAnimation]);
+
+    const handleTrayCancel = useCallback(async (traySlotIndex) => {
+        if (isBusyRef.current) return;
+
+        const entry = slots[traySlotIndex];
+        if (!entry) return;
+
+        isBusyRef.current = true;
+
+        try {
+            setRevealedTrayIds((prev) => {
+                const next = new Set(prev);
+                next.delete(entry.id);
+                return next;
+            });
+
+            flushSync(() => {
+                setSlots((prev) => {
+                    const next = [...prev];
+                    next[traySlotIndex] = null;
+                    return next;
+                });
+            });
+
+            await carouselRef.current?.scrollToDeckIndex(entry.deckIndex, { slow: true });
+        } finally {
+            isBusyRef.current = false;
+        }
+    }, [slots]);
+
+    const handleSelectAll = useCallback(async () => {
+        if (isBusyRef.current) return;
+
+        const emptyTraySlots = slots
+            .map((entry, index) => (entry === null ? index : -1))
+            .filter((index) => index >= 0);
+
+        if (!emptyTraySlots.length) return;
+
+        const startingFilledCount = countFilledSlots(slots);
+        const selectedIds = new Set(slots.filter(Boolean).map((entry) => entry.id));
+        const picked = shuffledCards
+            .filter((card) => !selectedIds.has(card.id))
+            .sort(() => Math.random() - 0.5)
+            .slice(0, emptyTraySlots.length)
+            .map((card) => ({
+                ...card,
+                isReversed: Math.random() < 0.5,
+                deckIndex: shuffledCards.findIndex((item) => item.id === card.id),
+            }));
+
+        isBusyRef.current = true;
+        setIsSelectingAll(true);
+
+        try {
+            for (let i = 0; i < picked.length; i += 1) {
+                const card = picked[i];
+                const traySlotIndex = emptyTraySlots[i];
+
+                await carouselRef.current?.scrollToDeckIndex(card.deckIndex);
+
+                const fromRect = carouselRef.current?.getCenterCardRect();
+                const toRect = getSlotRect(traySlotIndex);
+
+                flushSync(() => {
+                    setSlots((prev) => {
+                        const next = [...prev];
+                        next[traySlotIndex] = card;
+                        return next;
+                    });
+                });
+
+                await beginFlyAnimation(card, fromRect, toRect);
+
+                if (i < picked.length - 1) {
+                    await new Promise((resolve) => {
+                        setTimeout(resolve, SELECT_ALL_STAGGER_MS);
+                    });
+                }
+            }
+        } finally {
+            isBusyRef.current = false;
+            setIsSelectingAll(false);
+            prevFilledCountRef.current = startingFilledCount + picked.length;
+        }
+    }, [shuffledCards, slots, getSlotRect, beginFlyAnimation]);
 
     const handleConfirm = () => {
-        if (selectedCards.length === maxCards) {
-            onComplete(selectedCards);
+        if (filledCount === maxCards) {
+            onComplete(slots.filter(Boolean));
         }
     };
 
-    // 한번에 모두 뽑기 (랜덤 10장)
-    const handleSelectAll = () => {
-        if (selectedCards.length > 0) return;
-        const shuffled = [...cards].sort(() => Math.random() - 0.5);
-        const picked = shuffled.slice(0, maxCards).map(card => ({
-            ...card,
-            isReversed: Math.random() < 0.5
-        }));
-        setSelectedCards(picked);
-    };
-
-    // 전체 카드 너비 계산
-    const totalWidth = (shuffledCards.length - 1) * visibleWidth + cardWidth;
-
-    // 다음 카드 의미 가져오기
-    const cardMeanings = t('select.cardMeanings');
-    const nextCardMeaning = Array.isArray(cardMeanings) ? cardMeanings[selectedCards.length] : null;
+    const cardMeanings = t(`select.cardMeanings.${spread}`);
+    const hasMeanings = Array.isArray(cardMeanings) && cardMeanings.length > 0;
+    const isMeaningVisible = hasMeanings && filledCount < maxCards;
+    const meaningIndex = hasMeanings
+        ? Math.min(filledCount, cardMeanings.length - 1)
+        : 0;
+    const displayMeaning = hasMeanings ? cardMeanings[meaningIndex] : '';
+    const flyingCardId = flyingCard?.card.id;
 
     return (
-        <section className="select-screen" aria-label="Card Selection">
-            <header className="select-header">
-                <h2 className="select-title">{t('select.title')}</h2>
-                <p className="select-subtitle">
-                    {t('select.subtitle', { count: maxCards })}
-                </p>
-                <div className="selection-counter">
-                    <span className="counter-current">{selectedCards.length}</span>
-                    <span className="counter-divider">/</span>
-                    <span className="counter-max">{maxCards}</span>
-                </div>
-            </header>
-
-            {/* 다음 카드 의미 표시 */}
-            {nextCardMeaning && (
-                <div className="card-meaning">
-                    <p className="meaning-text">
-                        {nextCardMeaning}
+        <section className="select-screen mobile-screen" aria-label="Card Selection">
+            <div className="mobile-screen-scroll select-screen-body">
+                <header className="select-header">
+                    <h2 className="select-title">{t('select.title')}</h2>
+                    <p className="select-subtitle">
+                        {t('select.subtitle', { count: maxCards })}
                     </p>
-                </div>
-            )}
+                    <div className="selection-counter" aria-live="polite">
+                        <span className="counter-current">{filledCount}</span>
+                        <span className="counter-divider">/</span>
+                        <span className="counter-max">{maxCards}</span>
+                    </div>
+                </header>
 
-            {/* 모바일: 3D 캐러셀 / PC: 기존 레이아웃 */}
-            {isMobile ? (
-                <MobileCarousel
-                    cards={shuffledCards}
-                    selectedCards={selectedCards}
-                    onCardSelect={setSelectedCards}
-                    maxCards={maxCards}
-                />
-            ) : (
-                <>
-
-                    <div className="cards-horizontal-container">
-                        {/* 첫 번째 줄: 0-38 (39장) */}
-                        <div
-                            className="cards-horizontal cards-row"
-                            style={{ width: `${(39 - 1) * visibleWidth + cardWidth}px` }}
-                        >
-                            {shuffledCards.slice(0, 39).map((card, index) => {
-                                const selectedIndex = selectedCards.findIndex(c => c.id === card.id);
-                                const isSelected = selectedIndex !== -1;
-                                const isHovered = hoveredIndex === index;
-                                const baseX = index * visibleWidth;
-                                const spreadOffset = getSpreadOffset(index);
-
-                                return (
-                                    <div
-                                        key={card.id}
-                                        className="card-wrapper"
-                                        style={{
-                                            '--base-z': index,
-                                            left: `${baseX}px`
-                                        }}
-                                        onMouseEnter={() => setHoveredIndex(index)}
-                                        onMouseLeave={() => setHoveredIndex(null)}
-                                    >
-                                        <FanCard
-                                            card={card}
-                                            isSelected={isSelected}
-                                            selectedIndex={selectedIndex}
-                                            offsetX={spreadOffset}
-                                            isHovered={isHovered}
-                                            onClick={() => handleCardClick(card)}
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* 두 번째 줄: 39-77 (39장) */}
-                        <div
-                            className="cards-horizontal cards-row"
-                            style={{ width: `${(39 - 1) * visibleWidth + cardWidth}px` }}
-                        >
-                            {shuffledCards.slice(39, 78).map((card, index) => {
-                                const globalIndex = index + 39;
-                                const selectedIndex = selectedCards.findIndex(c => c.id === card.id);
-                                const isSelected = selectedIndex !== -1;
-                                const isHovered = hoveredIndex === globalIndex;
-                                const baseX = index * visibleWidth;
-                                const spreadOffset = getSpreadOffset(globalIndex);
-
-                                return (
-                                    <div
-                                        key={card.id}
-                                        className="card-wrapper"
-                                        style={{
-                                            '--base-z': index,
-                                            left: `${baseX}px`
-                                        }}
-                                        onMouseEnter={() => setHoveredIndex(globalIndex)}
-                                        onMouseLeave={() => setHoveredIndex(null)}
-                                    >
-                                        <FanCard
-                                            card={card}
-                                            isSelected={isSelected}
-                                            selectedIndex={selectedIndex}
-                                            offsetX={spreadOffset}
-                                            isHovered={isHovered}
-                                            onClick={() => handleCardClick(card)}
-                                        />
-                                    </div>
-                                );
-                            })}
+                {hasMeanings && (
+                    <div className="card-meaning-slot">
+                        <div className="card-meaning">
+                            <p
+                                className={`meaning-text${isMeaningVisible ? '' : ' meaning-text--hidden'}`}
+                                aria-hidden={!isMeaningVisible}
+                            >
+                                {displayMeaning}
+                            </p>
                         </div>
                     </div>
-                </>
+                )}
+
+                <MobileCarousel
+                    ref={carouselRef}
+                    cards={shuffledCards}
+                    selectedCardIds={selectedCardIds}
+                    selectedCount={filledCount}
+                    onCardAdd={handleCardAdd}
+                    onConfirm={handleConfirm}
+                    maxCards={maxCards}
+                />
+            </div>
+
+            {isScrollableTray ? (
+                <SelectedTrayCarousel
+                    ref={trayCarouselRef}
+                    slots={slots}
+                    maxCards={maxCards}
+                    revealedTrayIds={revealedTrayIds}
+                    flyingCardId={flyingCardId}
+                    onCancel={handleTrayCancel}
+                    disabled={isSelectingAll}
+                    cancelLabel={(n) => t('carousel.cancelCard', { n })}
+                />
+            ) : (
+                <div className="selected-cards-tray" aria-label="Selected cards">
+                    {slots.map((entry, index) => {
+                        const showInTray = entry
+                            && entry.id !== flyingCardId
+                            && revealedTrayIds.has(entry.id);
+
+                        return (
+                            <div
+                                key={index}
+                                ref={(el) => {
+                                    slotRefs.current[index] = el;
+                                }}
+                                className="selected-slot"
+                            >
+                                {showInTray && (
+                                    <button
+                                        type="button"
+                                        className="selected-tray-card"
+                                        onClick={() => handleTrayCancel(index)}
+                                        disabled={isSelectingAll}
+                                        aria-label={t('carousel.cancelCard', { n: index + 1 })}
+                                    >
+                                        <img src="/cards/back.png" alt="" draggable="false" />
+                                        <span className="selected-tray-badge">{index + 1}</span>
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             )}
 
-            <footer className="select-footer">
-                {selectedCards.length === 0 && (
-                    <button
-                        className="select-all-btn"
-                        onClick={handleSelectAll}
-                    >
-                        {t('select.selectAll')}
-                    </button>
-                )}
+            <div className="select-footer-actions">
                 <button
-                    className={`mystical-button ${selectedCards.length === maxCards ? 'ready' : 'disabled'}`}
-                    onClick={handleConfirm}
-                    disabled={selectedCards.length !== maxCards}
-                    aria-label={selectedCards.length === maxCards ? t('select.confirm') : t('select.moreCards', { count: maxCards - selectedCards.length })}
+                    type="button"
+                    className={`mobile-cta-secondary select-all-btn${filledCount >= maxCards ? ' select-all-btn--hidden' : ''}`}
+                    onClick={handleSelectAll}
+                    disabled={filledCount >= maxCards || isSelectingAll}
+                    aria-hidden={filledCount >= maxCards}
+                    tabIndex={filledCount >= maxCards ? -1 : 0}
                 >
-                    {selectedCards.length === maxCards
-                        ? t('select.confirm')
-                        : t('select.moreCards', { count: maxCards - selectedCards.length })}
+                    {t('select.selectAll')}
                 </button>
-            </footer>
+            </div>
+
+            {flyingCard && (
+                <div
+                    ref={flyOverlayRef}
+                    className="card-fly-overlay"
+                    aria-hidden="true"
+                >
+                    <div className="card-fly-inner">
+                        <img src="/cards/back.png" alt="" draggable="false" />
+                    </div>
+                </div>
+            )}
         </section>
     );
 };

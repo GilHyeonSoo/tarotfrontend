@@ -18,25 +18,19 @@ export const LANGUAGES = [
     { code: 'ja', name: '日本語', flag: '🇯🇵' }
 ];
 
-// 브라우저 언어 감지
-const detectBrowserLanguage = () => {
-    if (typeof window === 'undefined') return 'ko';
-    const browserLang = navigator.language || navigator.userLanguage || 'ko';
-    const langCode = browserLang.split('-')[0];
-    return translations[langCode] ? langCode : 'ko';
-};
-
 export const LanguageProvider = ({ children }) => {
     const [language, setLanguageState] = useState('ko');
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // 초기 언어 설정 (localStorage > 브라우저 감지 > ko)
+    // 기본 언어는 한국어. 사용자가 직접 고른 값만 localStorage에서 복원.
     useEffect(() => {
         const saved = localStorage.getItem('lumina-language');
         if (saved && translations[saved]) {
             setLanguageState(saved);
+            document.documentElement.lang = saved === 'zh' ? 'zh-CN' : saved;
         } else {
-            setLanguageState(detectBrowserLanguage());
+            setLanguageState('ko');
+            document.documentElement.lang = 'ko';
         }
         setIsInitialized(true);
     }, []);

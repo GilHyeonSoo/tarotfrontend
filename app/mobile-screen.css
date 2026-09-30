@@ -1,0 +1,70 @@
+/* Shared mobile screen layout (430px column) */
+
+.mobile-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - var(--mobile-header-height));
+    position: relative;
+    z-index: 1;
+}
+
+.mobile-screen-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-screen-footer {
+    flex: none;
+    padding:
+        10px 16px
+        max(12px, env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(212, 175, 55, 0.16);
+    background: rgba(10, 10, 20, 0.88);
+    backdrop-filter: blur(10px);
+}
+
+.mobile-screen-footer .mystical-button,
+.mobile-screen-footer-row .mystical-button {
+    width: 100%;
+    max-width: none;
+    padding: 14px 20px;
+}
+
+.mobile-screen-footer-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mobile-cta-secondary {
+    min-height: 44px;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.mobile-cta-secondary:active {
+    color: var(--color-text-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .category-card:hover {
+        border-color: var(--color-accent-gold);
+        transform: translateY(-2px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .floating,
+    .glow-pulse,
+    .preview-card,
+    .shuffle-card.shuffling {
+        animation: none !important;
+    }
+}

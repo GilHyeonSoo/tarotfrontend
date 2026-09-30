@@ -17,7 +17,7 @@ const SummaryCardViewer = ({ selectedCards }) => {
     const dragOffsetRef = useRef(0);
 
     const totalCards = selectedCards.length;
-    const CARD_SPACING = 90;
+    const CARD_SPACING = 135;
     const maxIndex = totalCards - 1;
 
     // 순환 없이 0~maxIndex로 제한
@@ -305,16 +305,6 @@ const SummaryCardViewer = ({ selectedCards }) => {
 
     const visibleCards = getVisibleCards();
 
-    // PC용 버튼 네비게이션
-    const goToCard = (direction) => {
-        const newIndex = clampIndex(currentIndex + direction);
-        if (newIndex !== currentIndex) {
-            currentIndexRef.current = newIndex;
-            setCurrentIndex(newIndex);
-            dragOffsetRef.current = 0;
-        }
-    };
-
     return (
         <div className="summary-viewer-container">
             <div
@@ -326,6 +316,7 @@ const SummaryCardViewer = ({ selectedCards }) => {
                 onMouseLeave={handleMouseLeave}
                 style={{ cursor: isDraggingRef.current ? 'grabbing' : 'grab' }}
             >
+                <div className="card-halo" aria-hidden="true" />
                 <div className="viewer-cards">
                     {visibleCards.map(({ card, slot, originalIndex }) => {
                         const style = getCardStyle(slot);
@@ -363,23 +354,7 @@ const SummaryCardViewer = ({ selectedCards }) => {
                 </div>
             )}
 
-            <div className="viewer-hint-row">
-                <button
-                    className="viewer-nav-btn"
-                    onClick={() => goToCard(-1)}
-                    disabled={currentIndex === 0}
-                >
-                    ‹
-                </button>
-                <p className="viewer-hint">{t('summary.viewerHint')}</p>
-                <button
-                    className="viewer-nav-btn"
-                    onClick={() => goToCard(1)}
-                    disabled={currentIndex === maxIndex}
-                >
-                    ›
-                </button>
-            </div>
+            <p className="viewer-hint">{t('summary.viewerHint')}</p>
         </div>
     );
 };

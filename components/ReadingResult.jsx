@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getSummaryCardIndex } from '../lib/spreads';
 import SummaryCardViewer from './SummaryCardViewer';
 import './ReadingResult.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-
-
-// 안전한 마크다운 파서 (XSS 방어)
 const parseMarkdown = (text) => {
     if (!text) return '';
 
@@ -19,123 +17,182 @@ const parseMarkdown = (text) => {
         .replace(/---/g, '<hr class="md-hr" />')
         .replace(/\n/g, '<br />');
 
-    // XSS 방어: DOMPurify로 sanitize
     return DOMPurify.sanitize(parsed, {
         ALLOWED_TAGS: ['h2', 'strong', 'em', 'hr', 'br'],
-        ALLOWED_ATTR: ['class']
+        ALLOWED_ATTR: ['class'],
     });
 };
 
-// 숫자를 로마 숫자로 변환
-const toRoman = (num) => {
-    const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
-    return romanNumerals[num] || (num + 1).toString();
+const splitByPunctuation = (text) => {
+    const sentences = [];
+    const pattern = /[^.!?…。]+[.!?…。]+/g;
+    let lastIndex = 0;
+    let match = pattern.exec(text);
+
+    while (match) {
+        const sentence = match[0].trim();
+        if (sentence) sentences.push(sentence);
+        lastIndex = pattern.lastIndex;
+        match = pattern.exec(text);
+    }
+
+    const remainder = text.slice(lastIndex).trim();
+    if (remainder) sentences.push(remainder);
+
+    return sentences;
 };
 
-const ReadingResult = ({ selectedCards, category, situation, onRestart, language }) => {
-    const { t, language: currentLang } = useLanguage();
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isFlipped, setIsFlipped] = useState(false);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const [streamingText, setStreamingText] = useState('');
-    const [isStreaming, setIsStreaming] = useState(false);
-    const [streamComplete, setStreamComplete] = useState(false);
-    const [showSummary, setShowSummary] = useState(false);
-    const [summaryText, setSummaryText] = useState('');
-    const [isSummaryStreaming, setIsSummaryStreaming] = useState(false);
-    const [summaryComplete, setSummaryComplete] = useState(false);
-    const interpretationRef = useRef(null);
-    const summaryRef = useRef(null);
+const splitIntoSentences = (text) => {
+    if (!text?.trim()) return [];
 
-    const currentCard = selectedCards?.[currentIndex];
-    const isLastCard = currentIndex === (selectedCards?.length || 0) - 1;
+    const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
 
-    // 스트리밍 AI 해석 요청
-    const fetchStreamingInterpretation = async () => {
-        if (!currentCard) return;
+    if (lines.length >= 3) {
+        return lines;
+    }
 
-        setIsStreaming(true);
-        setStreamingText('');
-        setStreamComplete(false);
+    return splitByPunctuation(text);
+};
 
-        try {
-            const response = await fetch(`${API_URL}/api/interpret-card`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    card: {
-                        id: currentCard.id,
-                        isReversed: currentCard.isReversed || false
-                    },
-                    cardIndex: currentIndex,
-                    category: category || {},
-                    situation: situation || '',
-                    language: language || 'ko',
-                    allCards: selectedCards.map(c => ({
-                        id: c.id,
-                        isReversed: c.isReversed || false
-                    }))
-                })
-            });
+const trimToCompleteSentences = (text) => {
+    if (!text?.trim()) return text || '';
+    const stripped = text.replace(/\s+$/u, '');
+    if (/[.!?…。]["'”’」』]*\s*$/u.test(stripped)) return stripped;
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+    let lastEnd = -1;
+    const pattern = /[.!?…。]["'”’」』]*/gu;
+    let match = pattern.exec(stripped);
+    while (match) {
+        lastEnd = match.index + match[0].length;
+        match = pattern.exec(stripped);
+    }
+    if (lastEnd <= 0) return stripped;
+    return stripped.slice(0, lastEnd).replace(/\s+$/u, '');
+};
 
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
+// The end of the revealed text must rise to this fraction of the visible area
+// (0 = top edge, 1 = bottom edge). Lower values reveal later, but the line must stay
+// reachable at max scroll, which depends on the reveal spacer's min(55vh, 420px) height.
+const REVEAL_TRIGGER_RATIO = 0.6;
+const REVEAL_COOLDOWN_MS = 900;
 
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
+const getWindowView = () => ({ viewTop: 0, viewBottom: window.innerHeight });
 
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            if (data.content) {
-                                setStreamingText(prev => prev + data.content);
-                            }
-                            if (data.done) {
-                                setStreamComplete(true);
-                            }
-                            if (data.error) {
-                                setStreamingText(prev => prev + `\n\n⚠️ 오류: ${data.error}`);
-                            }
-                        } catch (e) {
-                            // JSON 파싱 오류 무시
-                        }
-                    }
-                }
+const getScrollPosition = (target) => {
+    if (target === document || target === document.documentElement || target === document.body) {
+        return { scrollTop: window.scrollY, ...getWindowView() };
+    }
+    const rect = target.getBoundingClientRect();
+    return { scrollTop: target.scrollTop, viewTop: rect.top, viewBottom: rect.bottom };
+};
+
+const InterpretationContent = ({ sentences }) => {
+    const [revealedCount, setRevealedCount] = useState(1);
+    const lastRevealAtRef = useRef(0);
+    const spacerRef = useRef(null);
+
+    const hasMore = revealedCount < sentences.length;
+
+    // Which element scrolls depends on layout (window, shell, or inner panel),
+    // so listen to every scroll in the document during capture and decide by geometry.
+    // Wheel/touch gestures are also counted: once the page bottom is reached no
+    // scroll events fire, yet a downward gesture should keep revealing.
+    useEffect(() => {
+        if (!hasMore) return undefined;
+
+        const lastTops = new WeakMap();
+        let touchY = null;
+
+        const tryReveal = ({ viewTop, viewBottom }) => {
+            const now = Date.now();
+            if (now - lastRevealAtRef.current < REVEAL_COOLDOWN_MS) return;
+
+            const spacer = spacerRef.current;
+            if (!spacer) return;
+            const triggerLine = viewTop + (viewBottom - viewTop) * REVEAL_TRIGGER_RATIO;
+            if (spacer.getBoundingClientRect().top > triggerLine) return;
+
+            lastRevealAtRef.current = now;
+            setRevealedCount((count) => Math.min(count + 1, sentences.length));
+        };
+
+        const handleScroll = (event) => {
+            const target = event.target;
+            const key = target === document ? document.documentElement : target;
+            const { scrollTop, viewTop, viewBottom } = getScrollPosition(target);
+            const previousTop = lastTops.get(key) ?? scrollTop;
+            lastTops.set(key, scrollTop);
+            if (scrollTop > previousTop) tryReveal({ viewTop, viewBottom });
+        };
+
+        const handleWheel = (event) => {
+            if (event.deltaY > 0) tryReveal(getWindowView());
+        };
+
+        const handleTouchStart = (event) => {
+            touchY = event.touches[0]?.clientY ?? null;
+        };
+
+        const handleTouchMove = (event) => {
+            const y = event.touches[0]?.clientY;
+            if (touchY === null || y === undefined) return;
+            if (touchY - y > 8) {
+                touchY = y;
+                tryReveal(getWindowView());
             }
-        } catch (err) {
-            setStreamingText(`⚠️ 서버 연결에 실패했습니다: ${err.message}`);
-        } finally {
-            setIsStreaming(false);
-            setStreamComplete(true);
-        }
-    };
+        };
 
-    // 스크롤 자동 이동
-    useEffect(() => {
-        if (interpretationRef.current && streamingText) {
-            interpretationRef.current.scrollTop = interpretationRef.current.scrollHeight;
-        }
-    }, [streamingText]);
+        const options = { capture: true, passive: true };
+        document.addEventListener('scroll', handleScroll, options);
+        document.addEventListener('wheel', handleWheel, options);
+        document.addEventListener('touchstart', handleTouchStart, options);
+        document.addEventListener('touchmove', handleTouchMove, options);
+        return () => {
+            document.removeEventListener('scroll', handleScroll, options);
+            document.removeEventListener('wheel', handleWheel, options);
+            document.removeEventListener('touchstart', handleTouchStart, options);
+            document.removeEventListener('touchmove', handleTouchMove, options);
+        };
+    }, [hasMore, sentences.length]);
 
-    useEffect(() => {
-        if (summaryRef.current && summaryText) {
-            summaryRef.current.scrollTop = summaryRef.current.scrollHeight;
-        }
-    }, [summaryText]);
+    const visibleSentences = sentences.slice(0, revealedCount);
 
-    // 최종 결과 요약 요청
-    const fetchFinalSummary = async () => {
-        setShowSummary(true);
-        setIsSummaryStreaming(true);
+    return (
+        <div className="interpretation-content markdown-content">
+            {visibleSentences.map((sentence, index) => (
+                <div
+                    key={index}
+                    className="interpretation-sentence interpretation-sentence--revealed"
+                    dangerouslySetInnerHTML={{ __html: parseMarkdown(sentence) }}
+                />
+            ))}
+            {hasMore && <div ref={spacerRef} className="interpretation-reveal-spacer" aria-hidden="true" />}
+        </div>
+    );
+};
+
+const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }) => {
+    const { t } = useLanguage();
+    const [summaryText, setSummaryText] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [summaryComplete, setSummaryComplete] = useState(false);
+    const hasFetchedRef = useRef(false);
+
+    const totalCards = selectedCards?.length || 0;
+    const summaryIndex = getSummaryCardIndex(spread);
+    const sentences = useMemo(
+        () => (summaryComplete ? splitIntoSentences(summaryText) : []),
+        [summaryText, summaryComplete]
+    );
+
+    const fetchFinalSummary = useCallback(async () => {
+        if (!selectedCards?.length) return;
+
+        setIsLoading(true);
         setSummaryText('');
         setSummaryComplete(false);
+
+        let fullText = '';
 
         try {
             const response = await fetch(`${API_URL}/api/interpret-card`, {
@@ -144,17 +201,18 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart, language
                 body: JSON.stringify({
                     card: {
                         id: selectedCards[0].id,
-                        isReversed: selectedCards[0].isReversed || false
+                        isReversed: selectedCards[0].isReversed || false,
                     },
-                    cardIndex: 10,
-                    category: category || {},
+                    cardIndex: summaryIndex,
+                    spread: spread || 'celtic',
+                    category: {},
                     situation: situation || '',
                     language: language || 'ko',
-                    allCards: selectedCards.map(c => ({
+                    allCards: selectedCards.map((c) => ({
                         id: c.id,
-                        isReversed: c.isReversed || false
-                    }))
-                })
+                        isReversed: c.isReversed || false,
+                    })),
+                }),
             });
 
             const reader = response.body.getReader();
@@ -172,209 +230,72 @@ const ReadingResult = ({ selectedCards, category, situation, onRestart, language
                         try {
                             const data = JSON.parse(line.slice(6));
                             if (data.content) {
-                                setSummaryText(prev => prev + data.content);
-                            }
-                            if (data.done) {
-                                setSummaryComplete(true);
+                                fullText += data.content;
                             }
                             if (data.error) {
-                                setSummaryText(prev => prev + `\n\n⚠️ 오류: ${data.error}`);
+                                fullText += `\n\n⚠️ 오류: ${data.error}`;
                             }
-                        } catch (e) { }
+                        } catch {
+                            // ignore parse errors
+                        }
                     }
                 }
             }
         } catch (err) {
-            setSummaryText(`⚠️ 서버 연결에 실패했습니다: ${err.message}`);
+            fullText = `⚠️ 서버 연결에 실패했습니다: ${err.message}`;
         } finally {
-            setIsSummaryStreaming(false);
+            setSummaryText(trimToCompleteSentences(fullText));
             setSummaryComplete(true);
+            setIsLoading(false);
         }
-    };
+    }, [language, selectedCards, situation, spread, summaryIndex]);
 
-    // 카드가 없으면 렌더링하지 않음 (화면 전환 중 방지)
-    if (!selectedCards || selectedCards.length === 0 || !currentCard) {
+    useEffect(() => {
+        if (hasFetchedRef.current || !selectedCards?.length) return;
+        hasFetchedRef.current = true;
+        fetchFinalSummary();
+    }, [fetchFinalSummary, selectedCards]);
+
+    if (!selectedCards || selectedCards.length === 0) {
         return null;
     }
 
-    const handleCardClick = () => {
-        if (!isFlipped && !isTransitioning && !isStreaming) {
-            setIsFlipped(true);
-            // 카드가 뒤집히면 AI 해석 요청
-            setTimeout(() => {
-                fetchStreamingInterpretation();
-            }, 400); // 뒤집힘 애니메이션 후 시작
-        }
-    };
+    return (
+        <section className="result-screen result-screen--summary mobile-screen" aria-label="Final Reading">
+            <header className="result-header">
+                <h2 className="result-title">{t('summary.title')}</h2>
+                <p className="result-subtitle">{t('summary.subtitle', { count: totalCards })}</p>
+            </header>
 
-    const handleNextCard = () => {
-        if (!isLastCard && !isTransitioning && streamComplete) {
-            setIsTransitioning(true);
+            <SummaryCardViewer selectedCards={selectedCards} />
 
-            setTimeout(() => {
-                setCurrentIndex(currentIndex + 1);
-                setIsFlipped(false);
-                setStreamingText('');
-                setStreamComplete(false);
-
-                setTimeout(() => {
-                    setIsTransitioning(false);
-                }, 100);
-            }, 300);
-        }
-    };
-
-    // 최종 요약 화면
-    if (showSummary) {
-        return (
-            <section className="result-screen summary-mode" aria-label="Final Reading">
-                <header className="result-header">
-                    <h2 className="result-title">{t('summary.title')}</h2>
-                    <p className="result-subtitle">
-                        {t('summary.subtitle')}
-                    </p>
-                </header>
-
-                <SummaryCardViewer selectedCards={selectedCards} />
-
+            <div className="mobile-screen-scroll result-scroll">
                 <div className="interpretation-panel">
                     <article className="card-interpretation">
                         <div className="interpretation-body">
-                            <div
-                                className={`streaming-content ${isSummaryStreaming ? 'streaming' : ''}`}
-                                ref={summaryRef}
-                            >
-                                {isSummaryStreaming && !summaryText && (
-                                    <div className="streaming-loading">
-                                        <span className="typing-indicator">
-                                            <span></span><span></span><span></span>
-                                        </span>
-                                        {t('summary.loading')}
-                                    </div>
-                                )}
-                                <div
-                                    className="markdown-content"
-                                    dangerouslySetInnerHTML={{ __html: parseMarkdown(summaryText) }}
-                                />
-                            </div>
-                        </div>
-
-                        {summaryComplete && (
-                            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                                <div className="complete-section">
-                                    <p className="complete-message"></p>
-                                    <button className="mystical-button" onClick={onRestart}>
-                                        {t('summary.restart')}
-                                    </button>
+                            {isLoading && (
+                                <div className="interpretation-loading">
+                                    <span className="typing-indicator" aria-hidden="true">
+                                        <span></span><span></span><span></span>
+                                    </span>
+                                    <span className="interpretation-loading-text">{t('summary.loading')}</span>
                                 </div>
-                            </div>
-                        )}
-                    </article>
-                </div>
-            </section>
-        );
-    }
-
-    return (
-        <section className="result-screen" aria-label="Tarot Reading">
-            <header className="result-header">
-                <h2 className="result-title">{t('reading.title')}</h2>
-                <p className="result-subtitle">
-                    <span style={{ color: 'var(--color-accent-rose)', fontWeight: 'bold' }}>{t('reading.cardCount', { current: currentIndex + 1 })}</span> / {t('reading.totalCards')}
-                </p>
-            </header>
-
-            <div className={`single-card-container ${isTransitioning ? 'transitioning' : ''}`}>
-                <div
-                    className={`single-card ${isFlipped ? 'flipped' : ''}`}
-                    onClick={handleCardClick}
-                >
-                    <div className="single-card-inner">
-                        <div className="single-card-back">
-                            <img src="/cards/back.png" alt={t('reading.cardBack')} />
-                            {!isFlipped && <div className="click-hint">{t('reading.flipHint')}</div>}
-                        </div>
-                        <div className="single-card-front">
-                            {isFlipped && (
-                                <img
-                                    src={currentCard.image || "/cards/back.png"}
-                                    alt={currentCard[`name_${currentLang}`] || currentCard.name || currentCard.name_kr}
-                                    className={currentCard.isReversed ? 'reversed' : ''}
-                                />
                             )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="interpretation-panel">
-                {isFlipped ? (
-                    <article className="card-interpretation">
-                        <div className="interpretation-header">
-                            <span className="position-number">{toRoman(currentIndex)}</span>
-                            <div className="position-info">
-                                <h3 className="position-title">{t(`reading.positions`)[currentIndex]?.title}</h3>
-                                <p className="position-desc">{t(`reading.positions`)[currentIndex]?.description}</p>
-                            </div>
-                        </div>
-                        <div className="interpretation-body">
-                            <p className="card-selected-name">
-                                <strong>{currentCard[`name_${currentLang}`] || currentCard.name || currentCard.name_kr}</strong>
-                                {currentCard.isReversed && (
-                                    <span className="reversed-badge">{t('reading.reversed')}</span>
-                                )}
-                            </p>
-
-                            {/* 스트리밍 마크다운 해석 */}
-                            <div
-                                className={`streaming-content ${isStreaming ? 'streaming' : ''}`}
-                                ref={interpretationRef}
-                            >
-                                {isStreaming && !streamingText && (
-                                    <div className="streaming-loading">
-                                        <span className="typing-indicator">
-                                            <span></span><span></span><span></span>
-                                        </span>
-                                        {t('reading.loading')}
-                                    </div>
-                                )}
-                                <div
-                                    className="markdown-content"
-                                    dangerouslySetInnerHTML={{ __html: parseMarkdown(streamingText) }}
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                            {!isLastCard && streamComplete && (
-                                <button className="mystical-button next-button" onClick={handleNextCard}>
-                                    {t('reading.nextCard')}
-                                </button>
-                            )}
-                            {isLastCard && streamComplete && (
-                                <button className="mystical-button glow-pulse" onClick={fetchFinalSummary}>
-                                    {t('reading.viewSummary')}
-                                </button>
+                            {!isLoading && sentences.length > 0 && (
+                                <InterpretationContent sentences={sentences} />
                             )}
                         </div>
                     </article>
-                ) : (
-                    <div className="interpretation-placeholder">
-                        <p>{t('reading.placeholder')}</p>
-                    </div>
-                )}
+                </div>
             </div>
 
-            {!isStreaming && (
-                <div style={{ textAlign: 'center', marginTop: '15px' }}>
-                    <button className="skip-to-summary-btn" onClick={fetchFinalSummary}>
-                        {t('reading.skipToSummary')}<br />
-                        <span className="skip-label">Skip</span>
+            {summaryComplete && (
+                <footer className="summary-footer">
+                    <button type="button" className="mystical-button" onClick={onRestart}>
+                        {t('summary.restart')}
                     </button>
-                </div>
+                </footer>
             )}
-
-            {!isFlipped && <footer className="result-footer"></footer>}
         </section>
     );
 };

@@ -1,3 +1,17 @@
+.language-selector.is-shell {
+    position: relative;
+    top: auto;
+    right: auto;
+    z-index: 1;
+}
+
+.language-selector.is-shell .language-toggle {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    animation: none;
+    box-shadow: none;
+}
+
 .language-selector {
     position: fixed;
     top: 15px;
