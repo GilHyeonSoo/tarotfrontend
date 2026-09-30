@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'lumina-tarot-v2';
+const CACHE_VERSION = 'lumina-tarot-v3';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 
@@ -42,6 +42,10 @@ self.addEventListener('fetch', (event) => {
     if (url.origin !== self.location.origin) return;
 
     if (url.pathname.startsWith('/api')) return;
+    if (url.pathname === '/sitemap.xml' || url.pathname === '/robots.txt') {
+        event.respondWith(fetch(request));
+        return;
+    }
 
     if (url.pathname.startsWith('/cards/')) {
         event.respondWith(cacheFirst(request, IMAGE_CACHE));
