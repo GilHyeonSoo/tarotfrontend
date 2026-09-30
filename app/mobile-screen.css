@@ -3,7 +3,7 @@
 .mobile-screen {
     display: flex;
     flex-direction: column;
-    min-height: calc(100dvh - var(--mobile-header-height));
+    min-height: calc(var(--app-vh) - var(--mobile-header-height));
     position: relative;
     z-index: 1;
 }

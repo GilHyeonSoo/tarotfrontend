@@ -1,9 +1,6 @@
 .night-sky {
     position: fixed;
-    top: -40vh;
-    right: 0;
-    bottom: -40vh;
-    left: 0;
+    inset: 0;
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
@@ -18,7 +15,6 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    will-change: opacity, filter;
 }
 
 .night-sky__photo {
@@ -27,7 +23,6 @@
 }
 
 .night-sky__twinkle {
-    mix-blend-mode: screen;
     opacity: 0.22;
     animation: nightSkyTwinkle 5.5s ease-in-out infinite alternate;
 }
@@ -43,17 +38,27 @@
 @keyframes nightSkyTwinkle {
     0% {
         opacity: 0.12;
-        filter: brightness(1) saturate(1);
     }
 
     45% {
-        opacity: 0.38;
-        filter: brightness(1.28) saturate(1.12);
+        opacity: 0.32;
     }
 
     100% {
-        opacity: 0.2;
-        filter: brightness(1.08) saturate(1.04);
+        opacity: 0.18;
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .night-sky__twinkle {
+        mix-blend-mode: screen;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .night-sky__twinkle {
+        animation: none;
+        opacity: 0.18;
     }
 }
 
