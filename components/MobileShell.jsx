@@ -1,6 +1,7 @@
 'use client';
 
 import LanguageSelector from '@/components/LanguageSelector';
+import NightSkyBackground from '@/components/NightSkyBackground';
 import './MobileShell.css';
 
 export default function MobileShell({
@@ -11,6 +12,7 @@ export default function MobileShell({
 }) {
     return (
         <div className="mobile-shell-frame">
+            <NightSkyBackground />
             <div className="mobile-shell">
                 <header className="mobile-shell-header">
                     {showBack ? (

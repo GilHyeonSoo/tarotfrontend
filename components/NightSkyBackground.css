@@ -1,6 +1,9 @@
 .night-sky {
     position: fixed;
-    inset: 0;
+    top: -40vh;
+    right: 0;
+    bottom: -40vh;
+    left: 0;
     z-index: 0;
     overflow: hidden;
     pointer-events: none;

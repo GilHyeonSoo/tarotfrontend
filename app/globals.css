@@ -40,11 +40,16 @@ body,
 #root {
   height: 100%;
   width: 100%;
+  background-color: #050510;
+}
+
+html {
+  color-scheme: dark;
 }
 
 body {
   font-family: var(--font-body);
-  background: transparent;
+  background: #050510;
   color: var(--color-text-primary);
   overflow-x: hidden;
   min-height: 100dvh;

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
 import MobileShell from '@/components/MobileShell';
-import NightSkyBackground from '@/components/NightSkyBackground';
 import StartScreen from '@/components/StartScreen';
 import SituationInput from '@/components/SituationInput';
 import ShuffleScreen from '@/components/ShuffleScreen';
@@ -179,7 +178,6 @@ function TarotAppContent() {
         return (
             <MobileShell showBack={false} showLanguage={false}>
                 <main className="app app--state" role="main">
-                    <NightSkyBackground />
                     <div className="loading-screen" aria-live="polite">
                         <div className="loading-spinner" aria-label="Loading"></div>
                         <p>Loading...</p>
@@ -193,7 +191,6 @@ function TarotAppContent() {
         return (
             <MobileShell showBack={false} showLanguage={false}>
                 <main className="app app--state" role="main">
-                    <NightSkyBackground />
                     <div className="error-screen" role="alert">
                         <p>{error}</p>
                         <button type="button" className="mystical-button" onClick={fetchCards}>
@@ -212,7 +209,6 @@ function TarotAppContent() {
             showLanguage={currentScreen === SCREENS.START}
         >
             <main className="app" role="main">
-                <NightSkyBackground />
                 <ServiceWorkerRegister />
                 <div className={`screen-container ${fadeClass}`}>
                 {currentScreen === SCREENS.START && (

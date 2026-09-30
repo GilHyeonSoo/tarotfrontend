@@ -89,28 +89,41 @@ const PwaInstallBanner = () => {
 
     return (
         <aside className="pwa-install-banner" role="dialog" aria-labelledby="pwa-install-title">
+            {['tl', 'tr', 'bl', 'br'].map((pos) => (
+                <span key={pos} className={`pwa-install-corner pwa-install-corner--${pos}`} aria-hidden="true">✦</span>
+            ))}
+
             <button
                 type="button"
                 className="pwa-install-close"
                 onClick={handleDismiss}
                 aria-label={t('pwa.dismiss')}
             >
-                ×
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M4 4l8 8M12 4l-8 8" />
+                </svg>
             </button>
 
             <div className="pwa-install-content">
-                <span className="pwa-install-icon" aria-hidden="true">✦</span>
+                <div className="pwa-install-emblem" aria-hidden="true">
+                    <img src="/web-app-manifest-192x192.png" alt="" width="52" height="52" decoding="async" />
+                </div>
                 <div className="pwa-install-text">
+                    <p className="pwa-install-eyebrow" aria-hidden="true">Lumina Tarot</p>
                     <p id="pwa-install-title" className="pwa-install-title">{t('pwa.title')}</p>
                     <p className="pwa-install-subtitle">{subtitle}</p>
                 </div>
+            </div>
+
+            <div className="pwa-install-divider" aria-hidden="true">
+                <span>✦</span>
             </div>
 
             <div className="pwa-install-actions">
                 {canInstall && (
                     <button
                         type="button"
-                        className="pwa-install-btn"
+                        className="mystical-button pwa-install-btn"
                         onClick={handleInstall}
                         disabled={installing}
                     >
