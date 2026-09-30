@@ -195,7 +195,9 @@ const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }
     const [summaryText, setSummaryText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [summaryComplete, setSummaryComplete] = useState(false);
+    const [scrollHintDismissed, setScrollHintDismissed] = useState(false);
     const hasFetchedRef = useRef(false);
+    const sectionRef = useRef(null);
 
     const totalCards = selectedCards?.length || 0;
     const summaryIndex = getSummaryCardIndex(spread);
@@ -203,6 +205,48 @@ const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }
         () => (summaryComplete ? splitIntoSentences(summaryText) : []),
         [summaryText, summaryComplete]
     );
+    const showScrollHint = sentences.length > 0 && !scrollHintDismissed;
+
+    // Hide the scroll cue on the first downward intent: a scroll of the summary's
+    // scroller, a downward wheel, or an upward finger swipe.
+    useEffect(() => {
+        if (!showScrollHint) return undefined;
+
+        const scroller = findScrollContainer(sectionRef.current);
+        const startTop = getScrollView(scroller).scrollTop;
+        let touchStart = null;
+        const dismiss = () => setScrollHintDismissed(true);
+
+        const handleScroll = (event) => {
+            const target = event.target === document ? document.documentElement : event.target;
+            if (target === scroller && getScrollView(scroller).scrollTop > startTop) dismiss();
+        };
+        const handleWheel = (event) => {
+            if (event.deltaY > 0) dismiss();
+        };
+        const handleTouchStart = (event) => {
+            const touch = event.touches[0];
+            touchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+        };
+        const handleTouchMove = (event) => {
+            const touch = event.touches[0];
+            if (!touchStart || !touch) return;
+            const dy = touchStart.y - touch.clientY;
+            if (dy > 8 && dy > Math.abs(touch.clientX - touchStart.x)) dismiss();
+        };
+
+        const options = { capture: true, passive: true };
+        document.addEventListener('scroll', handleScroll, options);
+        document.addEventListener('wheel', handleWheel, options);
+        document.addEventListener('touchstart', handleTouchStart, options);
+        document.addEventListener('touchmove', handleTouchMove, options);
+        return () => {
+            document.removeEventListener('scroll', handleScroll, options);
+            document.removeEventListener('wheel', handleWheel, options);
+            document.removeEventListener('touchstart', handleTouchStart, options);
+            document.removeEventListener('touchmove', handleTouchMove, options);
+        };
+    }, [showScrollHint]);
 
     const fetchFinalSummary = useCallback(async () => {
         if (!selectedCards?.length) return;
@@ -280,13 +324,22 @@ const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }
     }
 
     return (
-        <section className="result-screen result-screen--summary mobile-screen" aria-label="Final Reading">
+        <section ref={sectionRef} className="result-screen result-screen--summary mobile-screen" aria-label="Final Reading">
             <header className="result-header">
                 <h2 className="result-title">{t('summary.title')}</h2>
                 <p className="result-subtitle">{t('summary.subtitle', { count: totalCards })}</p>
             </header>
 
             <SummaryCardViewer selectedCards={selectedCards} />
+
+            {showScrollHint && (
+                <div className="summary-scroll-hint" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path className="summary-scroll-hint-chevron" d="M6 7l6 6 6-6" />
+                        <path className="summary-scroll-hint-chevron" d="M6 13l6 6 6-6" />
+                    </svg>
+                </div>
+            )}
 
             <div className="mobile-screen-scroll result-scroll">
                 <div className="interpretation-panel">

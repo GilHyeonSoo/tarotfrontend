@@ -17,6 +17,63 @@
     overflow: visible;
 }
 
+/* Zero-height anchor so the cue overlays the seam between cards and text without shifting layout. */
+.summary-scroll-hint {
+    position: relative;
+    z-index: 5;
+    flex: none;
+    height: 0;
+    pointer-events: none;
+}
+
+.summary-scroll-hint svg {
+    position: absolute;
+    left: 50%;
+    /* Sits in the gap between the swipe hint and the first line of text. */
+    top: -6px;
+    width: 22px;
+    height: 22px;
+    transform: translateX(-50%);
+    overflow: visible;
+    fill: none;
+    stroke: var(--color-accent-gold);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.65)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+    opacity: 0;
+    animation: scrollHintIn 0.6s ease 0.9s forwards;
+}
+
+.summary-scroll-hint-chevron {
+    animation: scrollHintCascade 1.6s ease-in-out infinite;
+}
+
+.summary-scroll-hint-chevron:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+@keyframes scrollHintIn {
+    to { opacity: 1; }
+}
+
+@keyframes scrollHintCascade {
+    0% { opacity: 0.15; transform: translateY(-3px); }
+    45% { opacity: 1; transform: translateY(2px); }
+    100% { opacity: 0.15; transform: translateY(5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .summary-scroll-hint svg {
+        opacity: 1;
+        animation: none;
+    }
+
+    .summary-scroll-hint-chevron {
+        animation: none;
+    }
+}
+
 .summary-footer {
     flex: none;
     padding:
