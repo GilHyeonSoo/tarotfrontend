@@ -2,32 +2,19 @@
     position: relative;
 }
 
-.mobile-shell-content:has(.result-screen--summary) {
-    overflow: hidden;
-}
-
-.app:has(.result-screen--summary) {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-}
-
-.screen-container:has(.result-screen--summary) {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-height: 0;
-}
-
-.result-screen--summary.mobile-screen {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
+/*
+ * Summary: the shell stays fixed at 100svh (no document scroll, so iOS Chrome toolbars
+ * never collapse/relayout) and .mobile-shell-content is the single vertical scroller.
+ * Title, cards, interpretation and footer flow at natural height inside it, so neither
+ * the cards nor the text have to be squeezed into the leftover space.
+ */
 .result-screen--summary .result-header {
     padding-bottom: 4px;
+}
+
+.result-screen--summary .result-scroll {
+    flex: 1 0 auto;
+    overflow: visible;
 }
 
 .summary-footer {

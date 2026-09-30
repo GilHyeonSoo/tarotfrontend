@@ -76,14 +76,30 @@ const trimToCompleteSentences = (text) => {
 const REVEAL_TRIGGER_RATIO = 0.6;
 const REVEAL_COOLDOWN_MS = 900;
 
-const getWindowView = () => ({ viewTop: 0, viewBottom: window.innerHeight });
+const isDocumentScroller = (el) =>
+    !el || el === document || el === document.documentElement || el === document.body;
 
-const getScrollPosition = (target) => {
-    if (target === document || target === document.documentElement || target === document.body) {
-        return { scrollTop: window.scrollY, ...getWindowView() };
+const findScrollContainer = (node) => {
+    for (let el = node?.parentElement; el && !isDocumentScroller(el); el = el.parentElement) {
+        const { overflowY } = window.getComputedStyle(el);
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+            return el;
+        }
     }
-    const rect = target.getBoundingClientRect();
-    return { scrollTop: target.scrollTop, viewTop: rect.top, viewBottom: rect.bottom };
+    return document.documentElement;
+};
+
+// Visible band of the scroller, clipped to the window (browser toolbars shrink it).
+const getScrollView = (scroller) => {
+    if (isDocumentScroller(scroller)) {
+        return { scrollTop: window.scrollY, viewTop: 0, viewBottom: window.innerHeight };
+    }
+    const rect = scroller.getBoundingClientRect();
+    return {
+        scrollTop: scroller.scrollTop,
+        viewTop: Math.max(rect.top, 0),
+        viewBottom: Math.min(rect.bottom, window.innerHeight),
+    };
 };
 
 const InterpretationContent = ({ sentences }) => {
@@ -93,22 +109,24 @@ const InterpretationContent = ({ sentences }) => {
 
     const hasMore = revealedCount < sentences.length;
 
-    // Which element scrolls depends on layout (window, shell, or inner panel),
-    // so listen to every scroll in the document during capture and decide by geometry.
-    // Wheel/touch gestures are also counted: once the page bottom is reached no
-    // scroll events fire, yet a downward gesture should keep revealing.
+    // Reveal is measured against the element that actually scrolls the text (the shell
+    // content on the summary screen). Wheel/touch gestures are also counted: once the
+    // scroller hits its bottom no scroll events fire, yet a downward gesture should
+    // keep revealing.
     useEffect(() => {
         if (!hasMore) return undefined;
 
-        const lastTops = new WeakMap();
+        let lastTop = null;
         let touchY = null;
+        const getScroller = () => findScrollContainer(spacerRef.current);
 
-        const tryReveal = ({ viewTop, viewBottom }) => {
+        const tryReveal = () => {
             const now = Date.now();
             if (now - lastRevealAtRef.current < REVEAL_COOLDOWN_MS) return;
 
             const spacer = spacerRef.current;
             if (!spacer) return;
+            const { viewTop, viewBottom } = getScrollView(getScroller());
             const triggerLine = viewTop + (viewBottom - viewTop) * REVEAL_TRIGGER_RATIO;
             if (spacer.getBoundingClientRect().top > triggerLine) return;
 
@@ -117,16 +135,17 @@ const InterpretationContent = ({ sentences }) => {
         };
 
         const handleScroll = (event) => {
-            const target = event.target;
-            const key = target === document ? document.documentElement : target;
-            const { scrollTop, viewTop, viewBottom } = getScrollPosition(target);
-            const previousTop = lastTops.get(key) ?? scrollTop;
-            lastTops.set(key, scrollTop);
-            if (scrollTop > previousTop) tryReveal({ viewTop, viewBottom });
+            const scroller = getScroller();
+            const target = event.target === document ? document.documentElement : event.target;
+            if (target !== scroller) return;
+            const { scrollTop } = getScrollView(scroller);
+            const previousTop = lastTop ?? scrollTop;
+            lastTop = scrollTop;
+            if (scrollTop > previousTop) tryReveal();
         };
 
         const handleWheel = (event) => {
-            if (event.deltaY > 0) tryReveal(getWindowView());
+            if (event.deltaY > 0) tryReveal();
         };
 
         const handleTouchStart = (event) => {
@@ -138,7 +157,7 @@ const InterpretationContent = ({ sentences }) => {
             if (touchY === null || y === undefined) return;
             if (touchY - y > 8) {
                 touchY = y;
-                tryReveal(getWindowView());
+                tryReveal();
             }
         };
 

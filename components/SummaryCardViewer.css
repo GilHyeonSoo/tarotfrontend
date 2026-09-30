@@ -13,7 +13,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    touch-action: none;
+    /* Vertical swipes scroll the summary; horizontal swipes are handled in JS. */
+    touch-action: pan-y;
     user-select: none;
     overflow: hidden;
 }
@@ -27,9 +28,10 @@
     justify-content: center;
 }
 
+/* Card art is ~1110×1920, not 2:3: width follows the image so nothing is cropped. */
 .viewer-card {
     position: absolute;
-    width: 144px;
+    width: auto;
     height: 216px;
     border-radius: 12px;
     overflow: hidden;
@@ -44,9 +46,11 @@
 }
 
 .viewer-card img {
-    width: 100%;
+    display: block;
+    width: auto;
     height: 100%;
-    object-fit: cover;
+    aspect-ratio: auto 1110 / 1920;
+    object-fit: contain;
     border-radius: 12px;
 }
 

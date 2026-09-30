@@ -8,6 +8,8 @@ const SummaryCardViewer = ({ selectedCards }) => {
 
     const carouselRef = useRef(null);
     const startX = useRef(0);
+    const startY = useRef(0);
+    const touchAxisRef = useRef(null);
     const lastX = useRef(0);
     const velocity = useRef(0);
     const lastTime = useRef(0);
@@ -162,19 +164,36 @@ const SummaryCardViewer = ({ selectedCards }) => {
                 }
             }
             isDraggingRef.current = true;
+            touchAxisRef.current = null;
             const touch = e.touches[0];
             startX.current = touch.clientX;
+            startY.current = touch.clientY;
             lastX.current = touch.clientX;
             lastTime.current = performance.now();
             velocity.current = 0;
             dragOffsetRef.current = 0;
         };
 
+        // The wheel sits inside the page scroller, so a mostly-vertical swipe must be
+        // left to the browser to scroll; only a horizontal swipe drives the carousel.
         const handleTouchMove = (e) => {
             if (!isDraggingRef.current) return;
-            e.preventDefault();
             const touch = e.touches[0];
             const clientX = touch.clientX;
+
+            if (touchAxisRef.current === null) {
+                const dx = Math.abs(clientX - startX.current);
+                const dy = Math.abs(touch.clientY - startY.current);
+                if (dx < 6 && dy < 6) return;
+                touchAxisRef.current = dx > dy ? 'x' : 'y';
+                if (touchAxisRef.current === 'y') {
+                    isDraggingRef.current = false;
+                    snapToNearest(0);
+                    return;
+                }
+            }
+
+            if (e.cancelable) e.preventDefault();
             const now = performance.now();
             const dt = now - lastTime.current;
 
