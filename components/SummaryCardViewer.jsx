@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getCardMeaningHashtags } from '../lib/cardMeanings';
 import './SummaryCardViewer.css';
 
 const SummaryCardViewer = ({ selectedCards }) => {
@@ -306,6 +307,10 @@ const SummaryCardViewer = ({ selectedCards }) => {
     }, []);
 
     const centerCard = selectedCards[currentIndex];
+    const meaningHashtags = useMemo(
+        () => getCardMeaningHashtags(centerCard),
+        [centerCard]
+    );
     const VISIBLE_RANGE = 5;
 
     // 순환 없이 실제 존재하는 카드만 표시
@@ -371,6 +376,14 @@ const SummaryCardViewer = ({ selectedCards }) => {
                         <span className="viewer-reversed-badge">{t('reading.reversed')}</span>
                     )}
                 </div>
+            )}
+
+            {meaningHashtags.length > 0 && (
+                <p className="viewer-card-keywords" aria-label="Card keywords">
+                    {meaningHashtags.map((keyword) => (
+                        <span key={keyword} className="viewer-keyword">#{keyword}</span>
+                    ))}
+                </p>
             )}
 
             <p className="viewer-hint">{t('summary.viewerHint')}</p>

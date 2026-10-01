@@ -88,6 +88,24 @@
     font-family: var(--font-body);
 }
 
+.viewer-card-keywords {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 10px;
+    margin: 6px 8px 2px;
+    max-width: 100%;
+    text-align: center;
+}
+
+.viewer-keyword {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: #b8a8d4;
+    letter-spacing: 0.01em;
+    line-height: 1.35;
+}
+
 .viewer-hint {
     font-family: var(--font-body);
     font-size: 0.75rem;
