@@ -11,6 +11,13 @@ import ReadingResult from '@/components/ReadingResult';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import { SPREAD_TYPES } from '@/lib/spreads';
+import {
+    beginReadingSession,
+    clearReadingSession,
+    formatSpreadLabel,
+    postSessionLog,
+    updateReadingSessionSituation,
+} from '@/lib/sessionLog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -37,6 +44,15 @@ function TarotAppContent() {
     // 카드 데이터 가져오기
     useEffect(() => {
         fetchCards();
+    }, []);
+
+    useEffect(() => {
+        const onPageHide = () => {
+            postSessionLog({ completed: false }, { beacon: true });
+        };
+
+        window.addEventListener('pagehide', onPageHide);
+        return () => window.removeEventListener('pagehide', onPageHide);
     }, []);
 
     const fetchCards = async () => {
@@ -134,12 +150,18 @@ function TarotAppContent() {
     // 스프레드 선택
     const handleSpreadSelect = (spread) => {
         setSelectedSpread(spread);
+        beginReadingSession({
+            spread,
+            language,
+            spreadLabel: formatSpreadLabel(spread, t),
+        });
         changeScreen(SCREENS.SITUATION);
     };
 
     // 상황 입력 완료
     const handleSituationSubmit = (situation) => {
         setUserSituation(situation);
+        updateReadingSessionSituation(situation);
         changeScreen(SCREENS.SHUFFLE);
     };
 
@@ -155,6 +177,7 @@ function TarotAppContent() {
     };
 
     const handleRestart = () => {
+        clearReadingSession();
         setSelectedCards([]);
         setUserSituation('');
         setSelectedSpread(SPREAD_TYPES.CELTIC);
@@ -168,6 +191,15 @@ function TarotAppContent() {
             [SCREENS.SELECT]: SCREENS.SITUATION,
         };
         const previous = backMap[currentScreen];
+        if (previous === SCREENS.START) {
+            postSessionLog({
+                completed: false,
+                situation: userSituation,
+                spreadLabel: formatSpreadLabel(selectedSpread, t),
+                language,
+            });
+            clearReadingSession();
+        }
         if (previous) changeScreen(previous);
     };
 

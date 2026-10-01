@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import DOMPurify from 'dompurify';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getSummaryCardIndex } from '../lib/spreads';
+import { formatSpreadLabel, postSessionLog } from '../lib/sessionLog';
 import SummaryCardViewer from './SummaryCardViewer';
 import './ReadingResult.css';
 
@@ -206,6 +207,16 @@ const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }
         [summaryText, summaryComplete]
     );
     const showScrollHint = sentences.length > 0 && !scrollHintDismissed;
+
+    useEffect(() => {
+        if (!summaryComplete) return;
+        postSessionLog({
+            completed: true,
+            situation,
+            spreadLabel: formatSpreadLabel(spread, t),
+            language,
+        });
+    }, [summaryComplete, situation, spread, language, t]);
 
     // Hide the scroll cue on the first downward intent: a scroll of the summary's
     // scroller, a downward wheel, or an upward finger swipe.
