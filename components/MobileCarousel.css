@@ -1,16 +1,18 @@
 .mobile-carousel-container {
+    /* Card back is 2:3; width follows height so the art is never cropped differently. */
+    --carousel-card-h: clamp(112px, calc(112px + 38 * (var(--screen-h) - 504px) / 196), 150px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px 20px;
-    min-height: 350px;
+    padding: clamp(4px, calc(4px + 6 * (var(--screen-h) - 504px) / 196), 10px) 20px;
+    min-height: clamp(0px, calc(350 * (var(--screen-h) - 504px) / 196), 350px);
 }
 
 .carousel-wheel {
     position: relative;
     width: 100%;
-    height: 220px;
+    height: clamp(136px, calc(136px + 84 * (var(--screen-h) - 504px) / 196), 220px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -22,7 +24,7 @@
 .carousel-cards {
     position: relative;
     width: 100%;
-    height: 150px;
+    height: var(--carousel-card-h);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -30,8 +32,8 @@
 
 .carousel-card {
     position: absolute;
-    width: 100px;
-    height: 150px;
+    width: calc(var(--carousel-card-h) * 2 / 3);
+    height: var(--carousel-card-h);
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
@@ -72,12 +74,12 @@
 
 .carousel-center-indicator {
     margin-top: -10px;
-    margin-bottom: 15px;
+    margin-bottom: clamp(4px, calc(4px + 11 * (var(--screen-h) - 504px) / 196), 15px);
 }
 
 .center-arrow {
     color: var(--color-accent-gold);
-    font-size: 1.5rem;
+    font-size: clamp(1.2rem, calc(1.2rem + 4.8 * (var(--screen-h) - 504px) / 196), 1.5rem);
     animation: bounceArrow 1s ease-in-out infinite;
 }
 
@@ -95,7 +97,10 @@
 
 .carousel-select-btn {
     min-width: 220px;
-    margin-bottom: 15px;
+    min-height: clamp(46px, calc(46px + 10 * (var(--screen-h) - 504px) / 196), 56px);
+    padding-top: clamp(10px, calc(10px + 4 * (var(--screen-h) - 504px) / 196), 14px);
+    padding-bottom: clamp(10px, calc(10px + 4 * (var(--screen-h) - 504px) / 196), 14px);
+    margin-bottom: clamp(6px, calc(6px + 9 * (var(--screen-h) - 504px) / 196), 15px);
 }
 
 .carousel-select-btn.cancel {
@@ -119,7 +124,7 @@
 
 .carousel-hint {
     font-family: var(--font-body);
-    font-size: 0.9rem;
+    font-size: clamp(0.82rem, calc(0.82rem + 1.28 * (var(--screen-h) - 504px) / 196), 0.9rem);
     color: var(--color-text-secondary);
     margin: 0;
     opacity: 0.8;

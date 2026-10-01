@@ -30,6 +30,13 @@
 
   /* Stable viewport: dvh resizes with iOS Chrome toolbars and causes layout jank. */
   --app-vh: 100vh;
+
+  /*
+   * Height available below the shell header (which grows past 10px top padding on
+   * notched devices). Screens interpolate sizes from 504px (568px phones) to 700px:
+   * clamp(MIN, calc(MIN + (MAX - MIN) * (var(--screen-h) - 504px) / 196), MAX)
+   */
+  --screen-h: calc(var(--app-vh) - var(--mobile-header-height) - max(0px, env(safe-area-inset-top) - 10px));
 }
 
 @supports (height: 100svh) {

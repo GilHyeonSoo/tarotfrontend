@@ -4,25 +4,30 @@
     align-items: center;
     flex: 1;
     min-height: calc(var(--app-vh) - var(--mobile-header-height));
-    padding: 8px 16px 32px;
+    padding:
+        clamp(4px, calc(4px + 4 * (var(--screen-h) - 504px) / 196), 8px)
+        16px
+        clamp(8px, calc(8px + 24 * (var(--screen-h) - 504px) / 196), 32px);
     text-align: center;
 }
 
+/* Keeps ≥26px above the first button together with the nav margin: the rope ring hangs there. */
 .start-hero {
     width: 100%;
     margin-bottom: 18px;
 }
 
 .moon-symbol {
-    font-size: 2.6rem;
+    font-size: clamp(1.9rem, calc(1.9rem + 11.2 * (var(--screen-h) - 504px) / 196), 2.6rem);
     color: var(--color-accent-gold);
     text-shadow: var(--shadow-glow);
-    margin-bottom: 10px;
+    margin-bottom: clamp(4px, calc(4px + 6 * (var(--screen-h) - 504px) / 196), 10px);
 }
 
 .main-title {
     font-family: var(--font-heading);
-    font-size: 1.85rem;
+    /* vw cap keeps "LUMINA TAROT" on one line on 320px-wide phones. */
+    font-size: min(1.85rem, 8vw);
     font-weight: 700;
     background: var(--gradient-gold);
     -webkit-background-clip: text;
@@ -160,12 +165,13 @@
     align-items: center;
 }
 
+/* Gaps hold the knot tails and the rope run to the next button (≥22px). */
 .spread-rope-item--gap-short {
-    margin-top: 36px;
+    margin-top: clamp(24px, calc(24px + 12 * (var(--screen-h) - 504px) / 196), 36px);
 }
 
 .spread-rope-item--gap-long {
-    margin-top: 64px;
+    margin-top: clamp(30px, calc(30px + 34 * (var(--screen-h) - 504px) / 196), 64px);
 }
 
 .spread-button {
@@ -173,8 +179,12 @@
     position: relative;
     flex: 1;
     width: 100%;
-    min-height: 108px;
-    padding: 15px 22px 14px 30px;
+    min-height: clamp(84px, calc(84px + 24 * (var(--screen-h) - 504px) / 196), 108px);
+    padding:
+        clamp(10px, calc(10px + 5 * (var(--screen-h) - 504px) / 196), 15px)
+        22px
+        clamp(9px, calc(9px + 5 * (var(--screen-h) - 504px) / 196), 14px)
+        30px;
     border: 1px solid rgba(212, 175, 55, 0.3);
     border-radius: 12px;
     background:
@@ -283,6 +293,7 @@
     line-height: 1.45;
     color: #ffffff;
     letter-spacing: 0.02em;
+    word-break: keep-all;
 }
 
 @media (hover: hover) and (pointer: fine) {

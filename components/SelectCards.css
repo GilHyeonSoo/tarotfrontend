@@ -5,27 +5,33 @@
 .select-screen-body {
     display: flex;
     flex-direction: column;
-    padding: 12px 14px 8px;
+    padding:
+        clamp(4px, calc(4px + 8 * (var(--screen-h) - 504px) / 196), 12px)
+        14px
+        clamp(2px, calc(2px + 6 * (var(--screen-h) - 504px) / 196), 8px);
 }
 
 .select-header {
     text-align: center;
-    padding: 4px 0 12px;
+    padding:
+        clamp(2px, calc(2px + 2 * (var(--screen-h) - 504px) / 196), 4px)
+        0
+        clamp(4px, calc(4px + 8 * (var(--screen-h) - 504px) / 196), 12px);
     flex-shrink: 0;
 }
 
 .select-title {
     font-family: var(--font-heading);
-    font-size: 1.45rem;
+    font-size: clamp(1.1rem, calc(1.1rem + 5.6 * (var(--screen-h) - 504px) / 196), 1.45rem);
     color: var(--color-accent-gold);
-    margin-bottom: 6px;
+    margin-bottom: clamp(2px, calc(2px + 4 * (var(--screen-h) - 504px) / 196), 6px);
     text-shadow: var(--shadow-glow);
 }
 
 .select-subtitle {
-    font-size: 0.88rem;
+    font-size: clamp(0.82rem, calc(0.82rem + 0.96 * (var(--screen-h) - 504px) / 196), 0.88rem);
     color: var(--color-text-secondary);
-    margin-bottom: 10px;
+    margin-bottom: clamp(4px, calc(4px + 6 * (var(--screen-h) - 504px) / 196), 10px);
     line-height: 1.4;
 }
 
@@ -37,7 +43,8 @@
 
 .counter-current {
     font-family: var(--font-heading);
-    font-size: 1.35rem;
+    font-size: clamp(1.05rem, calc(1.05rem + 4.8 * (var(--screen-h) - 504px) / 196), 1.35rem);
+    line-height: 1.2;
     color: var(--color-accent-gold);
 }
 
@@ -54,7 +61,7 @@
 
 .card-meaning-slot {
     width: 100%;
-    margin: 0 auto 8px;
+    margin: 0 auto clamp(4px, calc(4px + 4 * (var(--screen-h) - 504px) / 196), 8px);
 }
 
 .card-meaning {
@@ -96,7 +103,7 @@
     flex-direction: column;
     gap: 10px;
     padding:
-        10px 16px
+        clamp(2px, calc(2px + 8 * (var(--screen-h) - 504px) / 196), 10px) 16px
         max(12px, env(safe-area-inset-bottom));
     background: transparent;
     border: none;
@@ -129,8 +136,11 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    min-height: 96px;
-    padding: 8px 16px 4px;
+    min-height: clamp(0px, calc(96 * (var(--screen-h) - 504px) / 196), 96px);
+    padding:
+        clamp(4px, calc(4px + 4 * (var(--screen-h) - 504px) / 196), 8px)
+        16px
+        clamp(2px, calc(2px + 2 * (var(--screen-h) - 504px) / 196), 4px);
     flex: none;
     width: 100%;
     box-sizing: border-box;
