@@ -1,6 +1,11 @@
 {
     "start": {
         "subtitle": "The cards of destiny await you",
+        "chooseSpread": "Choose a reading",
+        "previousSpread": "Previous reading",
+        "nextSpread": "Next reading",
+        "startReading": "Start reading",
+        "slideHint": "Swipe to choose, then tap the card to begin",
         "spreads": {
             "one": {
                 "title": "Today's Reading",
@@ -40,10 +45,15 @@
         "studyDesc": "Studies and exams"
     },
     "situation": {
-        "title": "Tell us about your situation",
-        "subtitle": "Share your concerns for a more accurate reading",
+        "opening": [
+            "Feel free to share any thoughts or concerns on your mind.",
+            "Is something weighing on you, or is there a choice you're finding hard to make?"
+        ],
+        "title": "Your story gives the cards a deeper meaning.",
+        "subtitle": "Take your time, and start with whatever comes to mind.",
         "placeholder": "Describe your current situation here.",
         "submit": "Draw Cards",
+        "required": "Please enter your question.",
         "skip": "Skip"
     },
     "shuffle": {
@@ -60,7 +70,9 @@
         "confirm": "Reveal Your Destiny",
         "moreCards": "Select {count} more",
         "cardMeanings": {
-            "one": ["This card carries today's message for you."],
+            "one": [
+                "This card carries today's message for you."
+            ],
             "three": [
                 "The first card represents the past.",
                 "The second card represents the present.",
@@ -98,23 +110,67 @@
         "placeholder": "Click the card to reveal your fate",
         "skipToSummary": "View Full Reading",
         "positions": {
-            "one": [{ "title": "Today's Message", "description": "The core message this card brings you now." }],
+            "one": [
+                {
+                    "title": "Today's Message",
+                    "description": "The core message this card brings you now."
+                }
+            ],
             "three": [
-                { "title": "Past", "description": "What has led to the present moment." },
-                { "title": "Present", "description": "Your current situation and energy." },
-                { "title": "Future", "description": "Where things may be heading." }
+                {
+                    "title": "Past",
+                    "description": "What has led to the present moment."
+                },
+                {
+                    "title": "Present",
+                    "description": "Your current situation and energy."
+                },
+                {
+                    "title": "Future",
+                    "description": "Where things may be heading."
+                }
             ],
             "celtic": [
-                { "title": "Present", "description": "Your current situation and circumstances." },
-                { "title": "Obstacle", "description": "Challenges and obstacles blocking your path." },
-                { "title": "Subconscious", "description": "Hidden desires, subconscious thoughts, and the root of the matter." },
-                { "title": "Past", "description": "Recent events that have shaped the present." },
-                { "title": "Potential", "description": "Emerging influences and possibilities ahead." },
-                { "title": "Near Future", "description": "What the near future holds for you." },
-                { "title": "Self-Perception", "description": "How you perceive yourself and your inner emotions." },
-                { "title": "Environment", "description": "The thoughts and influences of people around you." },
-                { "title": "Hopes & Fears", "description": "Your deepest hopes and hidden fears." },
-                { "title": "Outcome", "description": "The final result and conclusion." }
+                {
+                    "title": "Present",
+                    "description": "Your current situation and circumstances."
+                },
+                {
+                    "title": "Obstacle",
+                    "description": "Challenges and obstacles blocking your path."
+                },
+                {
+                    "title": "Subconscious",
+                    "description": "Hidden desires, subconscious thoughts, and the root of the matter."
+                },
+                {
+                    "title": "Past",
+                    "description": "Recent events that have shaped the present."
+                },
+                {
+                    "title": "Potential",
+                    "description": "Emerging influences and possibilities ahead."
+                },
+                {
+                    "title": "Near Future",
+                    "description": "What the near future holds for you."
+                },
+                {
+                    "title": "Self-Perception",
+                    "description": "How you perceive yourself and your inner emotions."
+                },
+                {
+                    "title": "Environment",
+                    "description": "The thoughts and influences of people around you."
+                },
+                {
+                    "title": "Hopes & Fears",
+                    "description": "Your deepest hopes and hidden fears."
+                },
+                {
+                    "title": "Outcome",
+                    "description": "The final result and conclusion."
+                }
             ]
         }
     },
@@ -123,7 +179,16 @@
         "subtitle": "The message from your {count} cards",
         "loading": "The reader is looking at the cards",
         "restart": "Start Over",
-        "viewerHint": "← Swipe to view your cards →"
+        "viewerHint": "← Swipe to view your cards →",
+        "reconnecting": "Reconnecting…",
+        "retry": "Retry this reading",
+        "errors": {
+            "connection": "Unable to connect. Check your internet connection and try again.",
+            "timeout": "The reading is taking too long. Try again with the same cards.",
+            "busy": "There are many requests right now. Please try again shortly.",
+            "interrupted": "The connection was interrupted. Try again with the same cards.",
+            "server": "Unable to get the reading. Please try again shortly."
+        }
     },
     "pwa": {
         "title": "Install the app",

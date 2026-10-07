@@ -1,6 +1,11 @@
 {
     "start": {
         "subtitle": "命运之牌正在等待你",
+        "chooseSpread": "选择运势",
+        "previousSpread": "上一个运势",
+        "nextSpread": "下一个运势",
+        "startReading": "开始解读",
+        "slideHint": "左右滑动选择，再点按卡牌开始",
         "spreads": {
             "one": {
                 "title": "今日运势",
@@ -40,10 +45,15 @@
         "studyDesc": "学习与考试的运势"
     },
     "situation": {
-        "title": "请描述你的现状",
-        "subtitle": "分享你的困扰，以获得更精准的解读",
+        "opening": [
+            "请自由写下此刻浮现的想法或烦恼。",
+            "最近有什么事让你挂心，或有什么选择让你难以决定吗？"
+        ],
+        "title": "牌会更深入地读懂你的故事。",
+        "subtitle": "从最先想到的事情开始，慢慢告诉我们吧。",
         "placeholder": "请在此描述你目前的状况。",
         "submit": "抽牌",
+        "required": "请填写你的问题。",
         "skip": "跳过"
     },
     "shuffle": {
@@ -60,7 +70,9 @@
         "confirm": "揭示命运",
         "moreCards": "还需选择{count}张",
         "cardMeanings": {
-            "one": ["这张牌传递今日的核心信息。"],
+            "one": [
+                "这张牌传递今日的核心信息。"
+            ],
             "three": [
                 "第一张牌代表过去。",
                 "第二张牌代表现在。",
@@ -98,23 +110,67 @@
         "placeholder": "点击卡牌揭示你的命运",
         "skipToSummary": "查看综合解读",
         "positions": {
-            "one": [{ "title": "今日信息", "description": "这张牌此刻带给你的核心信息。" }],
+            "one": [
+                {
+                    "title": "今日信息",
+                    "description": "这张牌此刻带给你的核心信息。"
+                }
+            ],
             "three": [
-                { "title": "过去", "description": "已经发生的事及其影响。" },
-                { "title": "现在", "description": "你当前的处境与能量。" },
-                { "title": "未来", "description": "事情可能发展的方向。" }
+                {
+                    "title": "过去",
+                    "description": "已经发生的事及其影响。"
+                },
+                {
+                    "title": "现在",
+                    "description": "你当前的处境与能量。"
+                },
+                {
+                    "title": "未来",
+                    "description": "事情可能发展的方向。"
+                }
             ],
             "celtic": [
-                { "title": "当前状况", "description": "代表你目前面临的处境。" },
-                { "title": "阻碍因素", "description": "正在阻碍你前进的障碍和挑战。" },
-                { "title": "潜意识", "description": "隐藏的欲望、潜意识以及问题的根源。" },
-                { "title": "过去", "description": "影响当下的近期事件。" },
-                { "title": "可能性", "description": "正在浮现的影响力和未来的机遇。" },
-                { "title": "近期未来", "description": "不久后即将发生的事。" },
-                { "title": "自我认知", "description": "你对自己的看法和内在情感。" },
-                { "title": "周围环境", "description": "周围人的想法和对你的影响。" },
-                { "title": "希望与恐惧", "description": "你内心深处的期望和隐忧。" },
-                { "title": "最终结果", "description": "事情的最终结局。" }
+                {
+                    "title": "当前状况",
+                    "description": "代表你目前面临的处境。"
+                },
+                {
+                    "title": "阻碍因素",
+                    "description": "正在阻碍你前进的障碍和挑战。"
+                },
+                {
+                    "title": "潜意识",
+                    "description": "隐藏的欲望、潜意识以及问题的根源。"
+                },
+                {
+                    "title": "过去",
+                    "description": "影响当下的近期事件。"
+                },
+                {
+                    "title": "可能性",
+                    "description": "正在浮现的影响力和未来的机遇。"
+                },
+                {
+                    "title": "近期未来",
+                    "description": "不久后即将发生的事。"
+                },
+                {
+                    "title": "自我认知",
+                    "description": "你对自己的看法和内在情感。"
+                },
+                {
+                    "title": "周围环境",
+                    "description": "周围人的想法和对你的影响。"
+                },
+                {
+                    "title": "希望与恐惧",
+                    "description": "你内心深处的期望和隐忧。"
+                },
+                {
+                    "title": "最终结果",
+                    "description": "事情的最终结局。"
+                }
             ]
         }
     },
@@ -123,7 +179,16 @@
         "subtitle": "{count}张牌传递的信息",
         "loading": "解牌师正在看牌",
         "restart": "重新开始",
-        "viewerHint": "← 滑动查看你的牌 →"
+        "viewerHint": "← 滑动查看你的牌 →",
+        "reconnecting": "正在重新连接…",
+        "retry": "重新获取解读",
+        "errors": {
+            "connection": "无法连接。请检查网络连接后重试。",
+            "timeout": "解读耗时较长。请使用相同的牌重试。",
+            "busy": "目前请求较多。请稍后重试。",
+            "interrupted": "接收解读时连接中断。请使用相同的牌重试。",
+            "server": "无法获取解读。请稍后重试。"
+        }
     },
     "pwa": {
         "title": "安装应用",

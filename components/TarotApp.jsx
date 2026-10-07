@@ -19,7 +19,7 @@ import {
     updateReadingSessionSituation,
 } from '@/lib/sessionLog';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_URL } from '../lib/api';
 
 // 화면 상태
 const SCREENS = {

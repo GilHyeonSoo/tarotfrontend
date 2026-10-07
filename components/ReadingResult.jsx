@@ -4,9 +4,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getSummaryCardIndex } from '../lib/spreads';
 import { formatSpreadLabel, postSessionLog } from '../lib/sessionLog';
 import SummaryCardViewer from './SummaryCardViewer';
+import { API_URL } from '../lib/api';
+import { requestReading } from '../lib/readingApi.mjs';
+import { splitIntoSentences } from '../lib/readingText.mjs';
 import './ReadingResult.css';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const parseMarkdown = (text) => {
     if (!text) return '';
@@ -22,37 +23,6 @@ const parseMarkdown = (text) => {
         ALLOWED_TAGS: ['h2', 'strong', 'em', 'hr', 'br'],
         ALLOWED_ATTR: ['class'],
     });
-};
-
-const splitByPunctuation = (text) => {
-    const sentences = [];
-    const pattern = /[^.!?…。]+[.!?…。]+/g;
-    let lastIndex = 0;
-    let match = pattern.exec(text);
-
-    while (match) {
-        const sentence = match[0].trim();
-        if (sentence) sentences.push(sentence);
-        lastIndex = pattern.lastIndex;
-        match = pattern.exec(text);
-    }
-
-    const remainder = text.slice(lastIndex).trim();
-    if (remainder) sentences.push(remainder);
-
-    return sentences;
-};
-
-const splitIntoSentences = (text) => {
-    if (!text?.trim()) return [];
-
-    const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
-
-    if (lines.length >= 3) {
-        return lines;
-    }
-
-    return splitByPunctuation(text);
 };
 
 const trimToCompleteSentences = (text) => {
@@ -197,7 +167,9 @@ const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }
     const [isLoading, setIsLoading] = useState(false);
     const [summaryComplete, setSummaryComplete] = useState(false);
     const [scrollHintDismissed, setScrollHintDismissed] = useState(false);
-    const hasFetchedRef = useRef(false);
+    const [readingError, setReadingError] = useState(null);
+    const [isRetrying, setIsRetrying] = useState(false);
+    const requestRef = useRef(null);
     const sectionRef = useRef(null);
 
     const totalCards = selectedCards?.length || 0;
@@ -261,74 +233,61 @@ const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }
 
     const fetchFinalSummary = useCallback(async () => {
         if (!selectedCards?.length) return;
-
+        requestRef.current?.abort();
+        const controller = new AbortController();
+        requestRef.current = controller;
         setIsLoading(true);
+        setIsRetrying(false);
+        setReadingError(null);
         setSummaryText('');
         setSummaryComplete(false);
-
-        let fullText = '';
+        setScrollHintDismissed(false);
 
         try {
-            const response = await fetch(`${API_URL}/api/interpret-card`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    card: {
-                        id: selectedCards[0].id,
-                        isReversed: selectedCards[0].isReversed || false,
-                    },
-                    cardIndex: summaryIndex,
-                    spread: spread || 'celtic',
-                    category: {},
-                    situation: situation || '',
-                    language: language || 'ko',
-                    allCards: selectedCards.map((c) => ({
-                        id: c.id,
-                        isReversed: c.isReversed || false,
-                    })),
-                }),
+            const text = await requestReading(`${API_URL}/api/interpret-card`, {
+                card: {
+                    id: selectedCards[0].id,
+                    isReversed: selectedCards[0].isReversed || false,
+                },
+                cardIndex: summaryIndex,
+                spread: spread || 'celtic',
+                category: {},
+                situation: situation || '',
+                language: language || 'ko',
+                allCards: selectedCards.map((c) => ({
+                    id: c.id,
+                    isReversed: c.isReversed || false,
+                })),
+            }, {
+                signal: controller.signal,
+                onRetry: () => {
+                    if (!controller.signal.aborted) setIsRetrying(true);
+                },
             });
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            if (data.content) {
-                                fullText += data.content;
-                            }
-                            if (data.error) {
-                                fullText += `\n\n⚠️ 오류: ${data.error}`;
-                            }
-                        } catch {
-                            // ignore parse errors
-                        }
-                    }
-                }
-            }
-        } catch (err) {
-            fullText = `⚠️ 서버 연결에 실패했습니다: ${err.message}`;
-        } finally {
-            setSummaryText(trimToCompleteSentences(fullText));
+            if (controller.signal.aborted) return;
+            setSummaryText(trimToCompleteSentences(text));
             setSummaryComplete(true);
-            setIsLoading(false);
+        } catch (error) {
+            if (controller.signal.aborted) return;
+            const code = ['busy', 'timeout', 'connection', 'interrupted'].includes(error.code)
+                ? error.code : 'server';
+            setReadingError(code);
+        } finally {
+            if (!controller.signal.aborted) setIsLoading(false);
         }
     }, [language, selectedCards, situation, spread, summaryIndex]);
 
     useEffect(() => {
-        if (hasFetchedRef.current || !selectedCards?.length) return;
-        hasFetchedRef.current = true;
-        fetchFinalSummary();
-    }, [fetchFinalSummary, selectedCards]);
+        let cancelled = false;
+        // Avoid a second request during React's development effect replay.
+        queueMicrotask(() => {
+            if (!cancelled) fetchFinalSummary();
+        });
+        return () => {
+            cancelled = true;
+            requestRef.current?.abort();
+        };
+    }, [fetchFinalSummary]);
 
     if (!selectedCards || selectedCards.length === 0) {
         return null;
@@ -361,7 +320,15 @@ const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }
                                     <span className="typing-indicator" aria-hidden="true">
                                         <span></span><span></span><span></span>
                                     </span>
-                                    <span className="interpretation-loading-text">{t('summary.loading')}</span>
+                                    <span className="interpretation-loading-text">{t(isRetrying ? 'summary.reconnecting' : 'summary.loading')}</span>
+                                </div>
+                            )}
+                            {!isLoading && readingError && (
+                                <div className="interpretation-error" role="alert">
+                                    <p>{t(`summary.errors.${readingError}`)}</p>
+                                    <button type="button" className="mystical-button" onClick={fetchFinalSummary}>
+                                        {t('summary.retry')}
+                                    </button>
                                 </div>
                             )}
                             {!isLoading && sentences.length > 0 && (
@@ -372,7 +339,7 @@ const ReadingResult = ({ selectedCards, spread, situation, onRestart, language }
                 </div>
             </div>
 
-            {summaryComplete && (
+            {(summaryComplete || readingError) && (
                 <footer className="summary-footer">
                     <button type="button" className="mystical-button" onClick={onRestart}>
                         {t('summary.restart')}

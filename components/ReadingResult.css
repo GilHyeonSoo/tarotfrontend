@@ -2,6 +2,20 @@
     position: relative;
 }
 
+.interpretation-error {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 0;
+    text-align: center;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+}
+
+.interpretation-error .mystical-button {
+    width: 100%;
+}
+
 /*
  * Summary: the shell stays fixed at 100svh (no document scroll, so iOS Chrome toolbars
  * never collapse/relayout) and .mobile-shell-content is the single vertical scroller.

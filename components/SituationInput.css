@@ -3,19 +3,111 @@
 }
 
 .situation-screen-body {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     flex: 1;
     width: 100%;
-    padding: 16px 14px;
+    padding: 12px 14px;
 }
 
 .situation-header {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
     width: 100%;
     text-align: center;
-    margin-bottom: 18px;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    margin-bottom: 16px;
+    transform: translateY(var(--situation-first-offset, 0px));
+    will-change: transform;
+}
+
+.situation-screen[data-intro-phase="second"] .situation-header {
+    transform: translateY(var(--situation-intro-offset, 0px));
+}
+
+.situation-screen[data-intro-phase="lifting"] .situation-header,
+.situation-screen[data-intro-phase="ready"] .situation-header {
+    transform: translateY(0);
+}
+
+.situation-screen[data-intro-phase="second"] .situation-header,
+.situation-screen[data-intro-phase="lifting"] .situation-header {
+    transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.situation-intro-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 320ms ease-out;
+}
+
+.situation-intro-group.is-visible {
+    opacity: 1;
+}
+
+.situation-intro-group > :last-child {
+    margin-bottom: 0;
+}
+
+.situation-intro-group > * {
+    width: 100%;
+    transition: width 500ms ease-out, font-size 500ms ease-out;
+}
+
+/* Older sentences shrink as the next pair appears, then settle above the form. */
+.situation-screen[data-intro-phase="second"] [data-intro-group="first"] > :first-child {
+    width: 82%;
+    font-size: 0.8rem;
+}
+
+.situation-screen[data-intro-phase="second"] [data-intro-group="first"] > :last-child {
+    width: 90%;
+    font-size: 0.84rem;
+}
+
+/* The four sentences widen from the small top to the broad bottom. */
+.situation-screen:is([data-intro-phase="lifting"], [data-intro-phase="ready"]) [data-intro-group="first"] > :first-child {
+    width: 66%;
+    font-size: 0.75rem;
+}
+
+.situation-screen:is([data-intro-phase="lifting"], [data-intro-phase="ready"]) [data-intro-group="first"] > :last-child {
+    width: 78%;
+    font-size: 0.8rem;
+}
+
+.situation-screen:is([data-intro-phase="lifting"], [data-intro-phase="ready"]) [data-intro-group="second"] > :first-child {
+    width: 90%;
+    font-size: 0.88rem;
+}
+
+.situation-screen:is([data-intro-phase="lifting"], [data-intro-phase="ready"]) .situation-title {
+    font-size: clamp(0.9rem, 4.5vw, 1.25rem);
+}
+
+.situation-form {
+    width: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px);
+    transition: opacity 280ms ease-out, transform 280ms ease-out;
+}
+
+.situation-screen[data-intro-phase="ready"] .situation-form {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 
 .selected-category {
@@ -34,15 +126,18 @@
     font-family: var(--font-heading);
     font-size: clamp(0.88rem, 3.8vw, 1.2rem);
     letter-spacing: -0.03em;
-    white-space: nowrap;
+    line-height: 1.75;
+    text-wrap: balance;
     color: var(--color-accent-gold);
-    margin-bottom: 8px;
 }
 
 .situation-subtitle {
     font-size: 0.88rem;
     color: var(--color-text-secondary);
-    line-height: 1.5;
+    line-height: 1.7;
+    white-space: pre-line;
+    text-wrap: balance;
+    margin-bottom: 12px;
 }
 
 .situation-input-container {
@@ -52,6 +147,7 @@
 
 .situation-textarea {
     width: 100%;
+    height: clamp(140px, calc(var(--screen-h) * 0.23), 176px);
     min-height: 140px;
     padding: 14px 14px 32px;
     background: rgba(26, 26, 58, 0.82);
@@ -85,15 +181,58 @@
     user-select: none;
 }
 
+.situation-error {
+    min-height: 1.5em;
+    margin-top: 8px;
+    color: #e5b7a5;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
 .situation-actions {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
     width: 100%;
-    margin-top: 20px;
+    margin-top: 8px;
 }
 
-.situation-actions .mystical-button {
-    width: 100%;
+.situation-submit {
+    min-height: 44px;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    color: var(--color-accent-gold);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    line-height: 1.5;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.situation-submit:focus-visible {
+    outline: 2px solid var(--color-accent-gold);
+    outline-offset: 4px;
+}
+
+.situation-submit:disabled {
+    cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .situation-submit:hover:not(:disabled) {
+        color: var(--color-text-primary);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .situation-screen[data-intro-phase="second"] .situation-header,
+    .situation-screen[data-intro-phase="lifting"] .situation-header,
+    .situation-form,
+    .situation-intro-group,
+    .situation-intro-group > * {
+        transition: none;
+    }
 }
